@@ -1,7 +1,12 @@
 import type { Prisma } from "@prisma/client"
 
 import { prisma } from "@/lib/prisma"
-import type { AuditResult, DetailedRecommendation } from "@/types/audit"
+import type {
+  AuditResult,
+  CopySuggestions,
+  DetailedRecommendation,
+  RecentAuditSummary,
+} from "@/types/audit"
 
 export interface StoredAudit {
   id: string
@@ -55,6 +60,26 @@ function parseDetailedRecommendations(
     )
 }
 
+function parseCopySuggestions(value: Prisma.JsonValue): CopySuggestions {
+  if (!isJsonObject(value)) {
+    return {
+      suggestedHeadline: "",
+      suggestedCTA: "",
+      suggestedMetaDescription: "",
+    }
+  }
+
+  return {
+    suggestedHeadline:
+      typeof value.suggestedHeadline === "string" ? value.suggestedHeadline : "",
+    suggestedCTA: typeof value.suggestedCTA === "string" ? value.suggestedCTA : "",
+    suggestedMetaDescription:
+      typeof value.suggestedMetaDescription === "string"
+        ? value.suggestedMetaDescription
+        : "",
+  }
+}
+
 function toStoredAudit(record: {
   id: string
   url: string
@@ -66,6 +91,7 @@ function toStoredAudit(record: {
   improvements: Prisma.JsonValue
   quickWins: Prisma.JsonValue
   detailedRecommendations: Prisma.JsonValue
+  copySuggestions: Prisma.JsonValue
   unlocked: boolean
   stripeSessionId: string | null
   createdAt: Date
@@ -87,6 +113,7 @@ function toStoredAudit(record: {
       detailedRecommendations: parseDetailedRecommendations(
         record.detailedRecommendations,
       ),
+      copySuggestions: parseCopySuggestions(record.copySuggestions),
     },
   }
 }
@@ -105,6 +132,8 @@ export async function createAudit(input: CreateAuditInput): Promise<StoredAudit>
       quickWins: input.result.quickWins,
       detailedRecommendations:
         input.result.detailedRecommendations as unknown as Prisma.InputJsonValue,
+      copySuggestions:
+        input.result.copySuggestions as unknown as Prisma.InputJsonValue,
       unlocked: false,
     },
   })
@@ -142,4 +171,35 @@ export async function unlockAudit(
   })
 
   return updateResult.count > 0
+}
+
+export async function listRecentAudits(
+  limit = 20,
+): Promise<RecentAuditSummary[]> {
+  const safeLimit = Math.min(25, Math.max(1, Math.floor(limit)))
+  const records = await prisma.audit.findMany({
+    orderBy: { createdAt: "desc" },
+    take: safeLimit,
+    select: {
+      id: true,
+      url: true,
+      overallScore: true,
+      seoScore: true,
+      conversionScore: true,
+      uxScore: true,
+      unlocked: true,
+      createdAt: true,
+    },
+  })
+
+  return records.map((record) => ({
+    id: record.id,
+    url: record.url,
+    overallScore: record.overallScore,
+    seoScore: record.seoScore,
+    conversionScore: record.conversionScore,
+    uxScore: record.uxScore,
+    unlocked: record.unlocked,
+    createdAt: record.createdAt.toISOString(),
+  }))
 }

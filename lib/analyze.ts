@@ -2,6 +2,7 @@ import OpenAI from "openai"
 
 import type {
   AuditResult,
+  CopySuggestions,
   DetailedRecommendation,
   ScrapedWebsiteData,
 } from "@/types/audit"
@@ -56,6 +57,12 @@ const MOCK_AUDIT_RESULT: AuditResult = {
       example: "Trusted by founders, freelancers, and small teams.",
     },
   ],
+  copySuggestions: {
+    suggestedHeadline: "Analyze your website and improve conversions in minutes.",
+    suggestedCTA: "Get Your Website Audit",
+    suggestedMetaDescription:
+      "Get an AI-powered website audit with actionable SEO, UX, and conversion insights to improve your landing page performance.",
+  },
 }
 
 const SYSTEM_PROMPT = `You are an expert in SEO, UX, and conversion rate optimization.
@@ -90,7 +97,12 @@ Return strictly valid JSON only (no markdown, no extra text) using this exact sh
       "recommendedAction": string,
       "example": string
     }
-  ]
+  ],
+  "copySuggestions": {
+    "suggestedHeadline": string,
+    "suggestedCTA": string,
+    "suggestedMetaDescription": string
+  }
 }
 
 Rules:
@@ -98,6 +110,10 @@ Rules:
 - problems and improvements must be concise and specific.
 - quickWins must be high-impact and quick to implement.
 - detailedRecommendations must be concrete and practical.
+- copySuggestions must be short, credible, and ready to use.
+- suggestedHeadline: benefit-driven and concise.
+- suggestedCTA: short, action-oriented CTA for a landing page.
+- suggestedMetaDescription: natural SEO copy around 140 to 160 characters.
 - Use plain English for end users.
 - Output JSON only.`
 
@@ -188,6 +204,34 @@ function buildFallbackDetailedRecommendations(
   }))
 }
 
+function normalizeCopySuggestions(value: unknown): CopySuggestions | null {
+  if (typeof value !== "object" || value === null) {
+    return null
+  }
+
+  const record = value as Record<string, unknown>
+  const suggestedHeadline =
+    typeof record.suggestedHeadline === "string"
+      ? record.suggestedHeadline.trim()
+      : ""
+  const suggestedCTA =
+    typeof record.suggestedCTA === "string" ? record.suggestedCTA.trim() : ""
+  const suggestedMetaDescription =
+    typeof record.suggestedMetaDescription === "string"
+      ? record.suggestedMetaDescription.trim()
+      : ""
+
+  if (!suggestedHeadline || !suggestedCTA || !suggestedMetaDescription) {
+    return null
+  }
+
+  return {
+    suggestedHeadline,
+    suggestedCTA,
+    suggestedMetaDescription,
+  }
+}
+
 function parseAuditResult(raw: string): AuditResult {
   const normalized = raw.trim().replace(/^```json\s*/i, "").replace(/\s*```$/, "")
   const parsed = JSON.parse(normalized) as Record<string, unknown>
@@ -198,6 +242,7 @@ function parseAuditResult(raw: string): AuditResult {
   const detailedRecommendations = normalizeDetailedRecommendations(
     parsed.detailedRecommendations,
   )
+  const copySuggestions = normalizeCopySuggestions(parsed.copySuggestions)
 
   return {
     overallScore: clampScore(parsed.overallScore),
@@ -217,6 +262,7 @@ function parseAuditResult(raw: string): AuditResult {
       detailedRecommendations.length === 3
         ? detailedRecommendations
         : buildFallbackDetailedRecommendations(improvements),
+    copySuggestions: copySuggestions ?? MOCK_AUDIT_RESULT.copySuggestions,
   }
 }
 

@@ -119,32 +119,48 @@ export default function ResultPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-white px-4 py-10 sm:py-14">
+    <main className="relative min-h-screen overflow-hidden px-4 py-10 sm:py-14">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -left-24 top-10 h-80 w-80 rounded-full bg-blue-300/25 blur-3xl" />
+        <div className="absolute right-0 top-20 h-96 w-96 rounded-full bg-cyan-200/35 blur-3xl" />
+        <div className="absolute bottom-0 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-indigo-200/20 blur-3xl" />
+      </div>
+
       <div className="mx-auto w-full max-w-6xl space-y-8">
-        <header className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <header className="glass-card p-6 sm:p-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                 AI Website Audit
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">
+              <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
                 Website Audit Report
               </h1>
               <p className="mt-3 max-w-2xl text-sm text-slate-600 sm:text-base">
                 Prioritized improvements for SEO, conversion, and UX with clear execution guidance.
               </p>
             </div>
-            <Link
-              href="/"
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-            >
-              New Audit
-            </Link>
+            <div className="flex items-center gap-2">
+              {hasValidId ? (
+                <a
+                  href={`/api/report/${id}`}
+                  className="rounded-xl border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium text-slate-700 backdrop-blur transition hover:bg-white"
+                >
+                  Download PDF
+                </a>
+              ) : null}
+              <Link
+                href="/"
+                className="rounded-xl border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium text-slate-700 backdrop-blur transition hover:bg-white"
+              >
+                New Audit
+              </Link>
+            </div>
           </div>
         </header>
 
         {unlockedFromQuery ? (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+          <div className="soft-panel border-emerald-200 bg-emerald-50/80 p-4">
             <p className="text-sm font-medium text-emerald-800">
               Payment successful. Your full report is now unlocked.
             </p>
@@ -152,19 +168,19 @@ export default function ResultPage() {
         ) : null}
 
         {!hasValidId ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="soft-panel p-8">
             <p className="text-red-600">Audit not found.</p>
           </div>
         ) : null}
 
         {hasValidId && loading ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="soft-panel p-8">
             <p className="text-slate-700">Loading audit report...</p>
           </div>
         ) : null}
 
         {hasValidId && !loading && error ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="soft-panel p-8">
             <p className="text-red-600">{error}</p>
           </div>
         ) : null}

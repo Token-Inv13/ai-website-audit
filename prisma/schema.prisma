@@ -18,6 +18,7 @@ model Audit {
   improvements    Json
   quickWins       Json     @default("[]")
   detailedRecommendations Json @default("[]")
+  copySuggestions Json     @default("{}")
   unlocked        Boolean  @default(false)
   stripeSessionId String?
   createdAt       DateTime @default(now())

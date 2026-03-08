@@ -64,20 +64,22 @@ export default function UrlForm() {
       <label htmlFor="website-url" className="block text-sm font-medium text-slate-700">
         Website URL
       </label>
-      <input
-        id="website-url"
-        type="url"
-        placeholder="https://example.com"
-        className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-        value={url}
-        onChange={(event) => setUrl(event.target.value)}
-        disabled={loading}
-        required
-      />
+      <div className="relative">
+        <input
+          id="website-url"
+          type="url"
+          placeholder="https://example.com"
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-slate-900 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.6)] outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          value={url}
+          onChange={(event) => setUrl(event.target.value)}
+          disabled={loading}
+          required
+        />
+      </div>
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-3.5 font-semibold text-white shadow-[0_16px_35px_-18px_rgba(37,99,235,0.75)] transition hover:from-blue-700 hover:to-cyan-600 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? "Analyzing..." : "Analyze Website"}
       </button>

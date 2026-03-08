@@ -62,7 +62,7 @@ NEXT_PUBLIC_APP_URL=https://ai-website-audit-beta.vercel.app
 ## Mode mock local (sans coût OpenAI)
 
 - Activer `MOCK_AI=true` pour éviter tout appel réel à l'API OpenAI.
-- En mode mock, l'audit retourne un rapport cohérent fixe (scores, problèmes, améliorations, quick wins et recommandations détaillées).
+- En mode mock, l'audit retourne un rapport cohérent fixe (scores, problèmes, améliorations, quick wins, copy suggestions et recommandations détaillées).
 - Ce mode permet de tester localement tout le flow produit sans clé OpenAI ni coût API.
 - Pour repasser en mode réel, mettre `MOCK_AI=false` et renseigner `OPENAI_API_KEY`.
 
@@ -77,11 +77,12 @@ NEXT_PUBLIC_APP_URL=https://ai-website-audit-beta.vercel.app
 
 1. L'utilisateur lance un audit gratuit.
 2. Le résultat est enregistré en base Postgres avec un ID unique (`unlocked=false`).
-3. La page `/result/{id}` affiche les scores + quick wins + un aperçu limité (2 problèmes, 2 améliorations).
-4. L'utilisateur clique sur "Unlock Full Report — $9".
-5. Stripe Checkout s'ouvre.
-6. Après paiement, retour sur `/result/{id}?unlocked=1`.
-7. L'audit est marqué `unlocked=true` en base et reste persistant après redémarrage serveur (les recommandations détaillées deviennent visibles).
+3. La page `/result/{id}` affiche les scores + quick wins + copy suggestions + un aperçu limité (2 problèmes, 2 améliorations).
+4. L'utilisateur peut télécharger un PDF depuis `/api/report/{id}` (preview ou full selon `unlocked`).
+5. L'utilisateur clique sur "Unlock Full Report — $9".
+6. Stripe Checkout s'ouvre.
+7. Après paiement, retour sur `/result/{id}?unlocked=1`.
+8. L'audit est marqué `unlocked=true` en base et reste persistant après redémarrage serveur (les recommandations détaillées deviennent visibles).
 
 ## Structure
 
@@ -90,9 +91,15 @@ NEXT_PUBLIC_APP_URL=https://ai-website-audit-beta.vercel.app
 - `lib/auditStore.ts` : wrapper d'accès DB pour les audits (Prisma)
 - `app/api/audit/route.ts` : génération audit + persistance
 - `app/api/audit/[id]/route.ts` : lecture audit (preview/full)
+- `app/api/audits/route.ts` : liste des audits récents (dashboard)
+- `app/api/report/[id]/route.ts` : export PDF du rapport (preview/full)
 - `app/api/checkout/route.ts` : création session Stripe Checkout
 - `app/api/checkout/success/route.ts` : callback succès + déverrouillage persistant
 - `app/result/[id]/page.tsx` : rapport (preview + unlock)
+
+## Dashboard interne
+
+- Le dashboard (`/dashboard` et `/api/audits`) existe pour usage interne et n'est pas exposé dans la navigation publique.
 
 ## Notes MVP
 
@@ -101,3 +108,4 @@ NEXT_PUBLIC_APP_URL=https://ai-website-audit-beta.vercel.app
   - `postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&schema=public`
 - Optionnel mais recommandé : conserver `DIRECT_URL` vers la connexion directe Supabase (`db.<project-ref>.supabase.co:5432`) pour les opérations Prisma hors runtime serverless.
 - `MOCK_AI=true` reste compatible pour tester le flow complet sans coût OpenAI.
+- L'export PDF utilise `@react-pdf/renderer`.

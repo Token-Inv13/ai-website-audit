@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { getAudit } from "@/lib/auditStore"
+import { getVisibleAuditResult } from "@/lib/auditVisibility"
 
 interface Params {
   params: Promise<{
@@ -17,13 +18,6 @@ export async function GET(_request: Request, { params }: Params) {
       return NextResponse.json({ error: "Audit not found." }, { status: 404 })
     }
 
-    const previewResult = {
-      ...audit.result,
-      problems: audit.result.problems.slice(0, 2),
-      improvements: audit.result.improvements.slice(0, 2),
-      detailedRecommendations: [],
-    }
-
     return NextResponse.json(
       {
         id: audit.id,
@@ -31,7 +25,7 @@ export async function GET(_request: Request, { params }: Params) {
         createdAt: audit.createdAt,
         unlocked: audit.unlocked,
         stripeSessionId: audit.stripeSessionId,
-        result: audit.unlocked ? audit.result : previewResult,
+        result: getVisibleAuditResult(audit.result, audit.unlocked),
       },
       { status: 200 },
     )
