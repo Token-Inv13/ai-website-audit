@@ -4,7 +4,7 @@ MVP Next.js qui analyse un site web depuis son URL et génère un audit SEO, con
 
 Version commerciale MVP incluse : aperçu gratuit + déblocage du rapport complet via Stripe Checkout ($9).
 
-Le stockage est maintenant persistant via Prisma + SQLite (plus de source de vérité en mémoire `Map`).
+Le stockage est persistant via Prisma + Supabase Postgres (plus de source de vérité en mémoire `Map`).
 
 ## Prérequis
 
@@ -33,7 +33,7 @@ cp .env.local.example .env.local
 npx prisma generate
 ```
 
-4. Créer/mette à jour la base SQLite :
+4. Synchroniser le schéma Prisma sur Postgres :
 
 ```bash
 npx prisma db push
@@ -45,17 +45,17 @@ npx prisma db push
 npm run dev
 ```
 
-Application disponible sur `http://localhost:3000`.
+Application disponible sur `http://localhost:3000` en local.
 
 ## Variables d'environnement
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://postgres:your_password@db.your-project.supabase.co:5432/postgres?schema=public"
 MOCK_AI=true
 OPENAI_API_KEY=
 STRIPE_SECRET_KEY=your_stripe_secret_key
 STRIPE_PRICE_ID=price_xxx
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=https://ai-website-audit-beta.vercel.app
 ```
 
 ## Mode mock local (sans coût OpenAI)
@@ -75,7 +75,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ## Flux produit
 
 1. L'utilisateur lance un audit gratuit.
-2. Le résultat est enregistré en base SQLite avec un ID unique (`unlocked=false`).
+2. Le résultat est enregistré en base Postgres avec un ID unique (`unlocked=false`).
 3. La page `/result/{id}` affiche les scores + quick wins + un aperçu limité (2 problèmes, 2 améliorations).
 4. L'utilisateur clique sur "Unlock Full Report — $9".
 5. Stripe Checkout s'ouvre.
@@ -95,5 +95,6 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ## Notes MVP
 
-- SQLite est utilisé pour garder le setup simple en local.
-- La structure Prisma est prête pour une migration future vers Postgres (changement du datasource).
+- Supabase Postgres est requis pour la persistance en production (Vercel).
+- Vérifier que `DATABASE_URL` côté Vercel pointe bien sur Supabase.
+- `MOCK_AI=true` reste compatible pour tester le flow complet sans coût OpenAI.
