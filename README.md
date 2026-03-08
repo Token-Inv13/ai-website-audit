@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Website Audit
 
-## Getting Started
+MVP Next.js qui analyse un site web depuis son URL et génère un audit SEO, conversion et UX via l'API OpenAI.
 
-First, run the development server:
+Version commerciale MVP incluse : aperçu gratuit + déblocage du rapport complet via Stripe Checkout ($9).
+
+Le stockage est maintenant persistant via Prisma + SQLite (plus de source de vérité en mémoire `Map`).
+
+## Prérequis
+
+- Node.js 20+
+- npm
+- Une clé OpenAI valide (uniquement si `MOCK_AI=false`)
+- Un compte Stripe avec un `Price` configuré
+
+## Installation et démarrage
+
+1. Installer les dépendances :
+
+```bash
+npm install
+```
+
+2. Créer `.env.local` :
+
+```bash
+cp .env.local.example .env.local
+```
+
+3. Générer le client Prisma :
+
+```bash
+npx prisma generate
+```
+
+4. Créer/mette à jour la base SQLite :
+
+```bash
+npx prisma db push
+```
+
+5. Lancer le projet :
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Application disponible sur `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Variables d'environnement
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+DATABASE_URL="file:./dev.db"
+MOCK_AI=true
+OPENAI_API_KEY=
+STRIPE_SECRET_KEY=your_stripe_secret_key
+STRIPE_PRICE_ID=price_xxx
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
-## Learn More
+## Mode mock local (sans coût OpenAI)
 
-To learn more about Next.js, take a look at the following resources:
+- Activer `MOCK_AI=true` pour éviter tout appel réel à l'API OpenAI.
+- En mode mock, l'audit retourne un rapport cohérent fixe (scores, 5 problèmes, 5 recommandations).
+- Ce mode permet de tester localement tout le flow produit sans clé OpenAI ni coût API.
+- Pour repasser en mode réel, mettre `MOCK_AI=false` et renseigner `OPENAI_API_KEY`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Configuration Stripe
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Créer un produit Stripe "Full Audit Report".
+2. Créer un prix one-time à `$9`.
+3. Copier l'identifiant du prix (`price_xxx`) dans `STRIPE_PRICE_ID`.
+4. Renseigner votre clé secrète Stripe dans `STRIPE_SECRET_KEY`.
 
-## Deploy on Vercel
+## Flux produit
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. L'utilisateur lance un audit gratuit.
+2. Le résultat est enregistré en base SQLite avec un ID unique (`unlocked=false`).
+3. La page `/result/{id}` affiche les scores + un aperçu limité (2 problèmes, 2 améliorations).
+4. L'utilisateur clique sur "Unlock Full Report — $9".
+5. Stripe Checkout s'ouvre.
+6. Après paiement, retour sur `/result/{id}?unlocked=1`.
+7. L'audit est marqué `unlocked=true` en base et reste persistant après redémarrage serveur.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Structure
+
+- `prisma/schema.prisma` : schéma Prisma (model `Audit`)
+- `lib/prisma.ts` : singleton Prisma Client
+- `lib/auditStore.ts` : wrapper d'accès DB pour les audits (Prisma)
+- `app/api/audit/route.ts` : génération audit + persistance
+- `app/api/audit/[id]/route.ts` : lecture audit (preview/full)
+- `app/api/checkout/route.ts` : création session Stripe Checkout
+- `app/api/checkout/success/route.ts` : callback succès + déverrouillage persistant
+- `app/result/[id]/page.tsx` : rapport (preview + unlock)
+
+## Notes MVP
+
+- SQLite est utilisé pour garder le setup simple en local.
+- La structure Prisma est prête pour une migration future vers Postgres (changement du datasource).

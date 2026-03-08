@@ -1,0 +1,23 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Audit {
+  id              String   @id
+  url             String
+  overallScore    Int
+  seoScore        Int
+  conversionScore Int
+  uxScore         Int
+  problems        Json
+  improvements    Json
+  unlocked        Boolean  @default(false)
+  stripeSessionId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
