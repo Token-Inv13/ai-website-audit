@@ -1,3 +1,5 @@
+import type { Metadata } from "next"
+
 import UrlForm from "@/components/UrlForm"
 
 const reviewItems = [
@@ -10,6 +12,12 @@ const reviewItems = [
 ]
 
 const steps = ["Enter your URL", "Get your audit", "Unlock the full report"]
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/",
+  },
+}
 
 export default function HomePage() {
   return (

@@ -98,7 +98,11 @@ NEXT_PUBLIC_APP_URL=https://ai-website-audit-beta.vercel.app
 - `app/api/report/[id]/route.ts` : export PDF du rapport (preview/full)
 - `app/api/checkout/route.ts` : création session Stripe Checkout
 - `app/api/checkout/success/route.ts` : callback succès + déverrouillage persistant
+- `app/audit/[type]/page.tsx` : pages SEO programmatiques par type de site
+- `app/blog/page.tsx` et `app/blog/[slug]/page.tsx` : blog SEO statique
 - `app/result/[id]/page.tsx` : rapport (preview + unlock)
+- `app/sitemap.ts` : sitemap SEO
+- `app/robots.ts` : robots.txt SEO
 
 ## Dashboard interne
 
