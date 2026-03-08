@@ -4,6 +4,7 @@ import { NextResponse } from "next/server"
 
 import { analyzeWebsite } from "@/lib/analyze"
 import { createAudit } from "@/lib/auditStore"
+import { getErrorMessage } from "@/lib/error"
 import { scrapeWebsite } from "@/lib/scrape"
 
 interface AuditRequestBody {
@@ -36,7 +37,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ id }, { status: 200 })
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error"
+    console.error("POST /api/audit failed:", error)
+    const message = getErrorMessage(error, "Internal server error")
 
     if (message.includes("OPENAI_API_KEY")) {
       return NextResponse.json(
@@ -67,7 +69,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { error: "Unexpected error while running the audit." },
+      { error: "Internal server error" },
       { status: 500 },
     )
   }

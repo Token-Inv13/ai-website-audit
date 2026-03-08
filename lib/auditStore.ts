@@ -1,7 +1,7 @@
 import type { Prisma } from "@prisma/client"
 
 import { prisma } from "@/lib/prisma"
-import type { AuditResult } from "@/types/audit"
+import type { AuditResult, DetailedRecommendation } from "@/types/audit"
 
 export interface StoredAudit {
   id: string
@@ -26,6 +26,35 @@ function parseStringArray(value: Prisma.JsonValue): string[] {
   return value.filter((item): item is string => typeof item === "string")
 }
 
+function isJsonObject(value: Prisma.JsonValue): value is Prisma.JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function parseDetailedRecommendations(
+  value: Prisma.JsonValue,
+): DetailedRecommendation[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .filter((item): item is Prisma.JsonObject => isJsonObject(item))
+    .map((item) => {
+      const title = typeof item.title === "string" ? item.title : ""
+      const whyItMatters =
+        typeof item.whyItMatters === "string" ? item.whyItMatters : ""
+      const recommendedAction =
+        typeof item.recommendedAction === "string" ? item.recommendedAction : ""
+      const example = typeof item.example === "string" ? item.example : ""
+
+      return { title, whyItMatters, recommendedAction, example }
+    })
+    .filter(
+      (item) =>
+        item.title || item.whyItMatters || item.recommendedAction || item.example,
+    )
+}
+
 function toStoredAudit(record: {
   id: string
   url: string
@@ -35,6 +64,8 @@ function toStoredAudit(record: {
   uxScore: number
   problems: Prisma.JsonValue
   improvements: Prisma.JsonValue
+  quickWins: Prisma.JsonValue
+  detailedRecommendations: Prisma.JsonValue
   unlocked: boolean
   stripeSessionId: string | null
   createdAt: Date
@@ -52,6 +83,10 @@ function toStoredAudit(record: {
       uxScore: record.uxScore,
       problems: parseStringArray(record.problems),
       improvements: parseStringArray(record.improvements),
+      quickWins: parseStringArray(record.quickWins),
+      detailedRecommendations: parseDetailedRecommendations(
+        record.detailedRecommendations,
+      ),
     },
   }
 }
@@ -67,6 +102,9 @@ export async function createAudit(input: CreateAuditInput): Promise<StoredAudit>
       uxScore: input.result.uxScore,
       problems: input.result.problems,
       improvements: input.result.improvements,
+      quickWins: input.result.quickWins,
+      detailedRecommendations:
+        input.result.detailedRecommendations as unknown as Prisma.InputJsonValue,
       unlocked: false,
     },
   })

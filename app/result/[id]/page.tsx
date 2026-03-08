@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useParams, useSearchParams } from "next/navigation"
 
 import AuditReport from "@/components/AuditReport"
+import { getApiErrorMessage, getErrorMessage } from "@/lib/error"
 import type { AuditResult } from "@/types/audit"
 
 interface AuditApiResponse {
@@ -40,13 +41,16 @@ export default function ResultPage() {
       try {
         setError("")
         const response = await fetch(`/api/audit/${id}`, { cache: "no-store" })
-        const payload = (await response.json()) as
-          | AuditApiResponse
-          | { error?: string }
+        const payload = (await response
+          .json()
+          .catch(() => null)) as AuditApiResponse | null
 
-        if (!response.ok || !("result" in payload)) {
-          const errorMessage = "error" in payload ? payload.error : undefined
-          throw new Error(errorMessage || "Audit not found.")
+        if (!response.ok) {
+          throw new Error(getApiErrorMessage(payload, "Audit not found."))
+        }
+
+        if (!payload || !("result" in payload)) {
+          throw new Error("Audit not found.")
         }
 
         if (!active) {
@@ -61,9 +65,7 @@ export default function ResultPage() {
           return
         }
 
-        const message =
-          loadError instanceof Error ? loadError.message : "Unable to load this audit."
-        setError(message)
+        setError(getErrorMessage(loadError, "Unable to load this audit."))
       } finally {
         if (active) {
           setLoading(false)
@@ -95,33 +97,51 @@ export default function ResultPage() {
         body: JSON.stringify({ auditId: id }),
       })
 
-      const payload = (await response.json()) as { url?: string; error?: string }
+      const payload = (await response
+        .json()
+        .catch(() => null)) as { url?: string } | null
 
-      if (!response.ok || !payload.url) {
-        throw new Error(payload.error || "Checkout session creation failed.")
+      if (!response.ok) {
+        throw new Error(
+          getApiErrorMessage(payload, "Checkout session creation failed."),
+        )
+      }
+
+      if (!payload?.url) {
+        throw new Error("Checkout session creation failed.")
       }
 
       window.location.href = payload.url
     } catch (unlockError) {
-      const message =
-        unlockError instanceof Error ? unlockError.message : "Unable to start checkout."
-      setCheckoutError(message)
+      setCheckoutError(getErrorMessage(unlockError, "Unable to start checkout."))
       setCheckoutLoading(false)
     }
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-12">
+    <main className="min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-white px-4 py-10 sm:py-14">
       <div className="mx-auto w-full max-w-6xl space-y-8">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-3xl font-bold text-slate-900">Website Audit Report</h1>
-          <Link
-            href="/"
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-          >
-            New Audit
-          </Link>
-        </div>
+        <header className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                AI Website Audit
+              </p>
+              <h1 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">
+                Website Audit Report
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm text-slate-600 sm:text-base">
+                Prioritized improvements for SEO, conversion, and UX with clear execution guidance.
+              </p>
+            </div>
+            <Link
+              href="/"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            >
+              New Audit
+            </Link>
+          </div>
+        </header>
 
         {unlockedFromQuery ? (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">

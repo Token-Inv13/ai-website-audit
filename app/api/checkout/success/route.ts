@@ -56,7 +56,8 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.redirect(buildRedirect(`/result/${auditId}`, request.url))
-  } catch {
+  } catch (error) {
+    console.error("GET /api/checkout/success failed:", error)
     return NextResponse.redirect(buildRedirect("/", request.url))
   }
 }

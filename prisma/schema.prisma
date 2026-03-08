@@ -16,6 +16,8 @@ model Audit {
   uxScore         Int
   problems        Json
   improvements    Json
+  quickWins       Json     @default("[]")
+  detailedRecommendations Json @default("[]")
   unlocked        Boolean  @default(false)
   stripeSessionId String?
   createdAt       DateTime @default(now())

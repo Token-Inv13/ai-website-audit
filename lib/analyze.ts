@@ -1,6 +1,10 @@
 import OpenAI from "openai"
 
-import type { AuditResult, ScrapedWebsiteData } from "@/types/audit"
+import type {
+  AuditResult,
+  DetailedRecommendation,
+  ScrapedWebsiteData,
+} from "@/types/audit"
 
 const MOCK_AUDIT_RESULT: AuditResult = {
   overallScore: 72,
@@ -21,24 +25,81 @@ const MOCK_AUDIT_RESULT: AuditResult = {
     "Improve the meta description with a clear keyword and benefit.",
     "Reorganize sections to improve readability and scanning.",
   ],
+  quickWins: [
+    "Add a visible primary CTA above the fold.",
+    "Rewrite the headline around a clear user benefit.",
+    "Add testimonials or trust badges near the hero section.",
+  ],
+  detailedRecommendations: [
+    {
+      title: "Rewrite the headline",
+      whyItMatters:
+        "Visitors need to understand the value of the product immediately.",
+      recommendedAction:
+        "Use a benefit-driven headline focused on the outcome for the user.",
+      example: "Organize notes, tasks, and ideas in one simple workspace.",
+    },
+    {
+      title: "Improve CTA visibility",
+      whyItMatters:
+        "A hidden CTA reduces conversions because users do not know what to do next.",
+      recommendedAction:
+        "Place a primary CTA button in the hero section with strong contrast.",
+      example: "Start your free audit",
+    },
+    {
+      title: "Add trust signals",
+      whyItMatters:
+        "Trust indicators reduce hesitation and improve conversion rates.",
+      recommendedAction:
+        "Display testimonials, review snippets, or client logos close to the top section.",
+      example: "Trusted by founders, freelancers, and small teams.",
+    },
+  ],
 }
 
-const SYSTEM_PROMPT = `You are a website SEO and conversion optimization expert.
+const SYSTEM_PROMPT = `You are an expert in SEO, UX, and conversion rate optimization.
 
-Analyze the following website data and produce a website audit.
+Analyze the website data and produce a concrete, actionable audit that a business owner can apply immediately.
 
-Return JSON with:
+Return strictly valid JSON only (no markdown, no extra text) using this exact shape:
+{
+  "overallScore": number,
+  "seoScore": number,
+  "conversionScore": number,
+  "uxScore": number,
+  "problems": [string, string, string, string, string],
+  "improvements": [string, string, string, string, string],
+  "quickWins": [string, string, string],
+  "detailedRecommendations": [
+    {
+      "title": string,
+      "whyItMatters": string,
+      "recommendedAction": string,
+      "example": string
+    },
+    {
+      "title": string,
+      "whyItMatters": string,
+      "recommendedAction": string,
+      "example": string
+    },
+    {
+      "title": string,
+      "whyItMatters": string,
+      "recommendedAction": string,
+      "example": string
+    }
+  ]
+}
 
-overallScore (0-100)
-seoScore (0-100)
-conversionScore (0-100)
-uxScore (0-100)
-
-problems (array of 5 strings)
-
-improvements (array of 5 actionable recommendations)
-
-Response must be strictly valid JSON without markdown or additional text.`
+Rules:
+- Keep scores between 0 and 100.
+- problems and improvements must be concise and specific.
+- quickWins must be high-impact and quick to implement.
+- detailedRecommendations must be concrete and practical.
+- Use plain English for end users.
+- Output JSON only.`
 
 function clampScore(value: unknown): number {
   if (typeof value !== "number" || Number.isNaN(value)) {
@@ -48,7 +109,7 @@ function clampScore(value: unknown): number {
   return Math.min(100, Math.max(0, Math.round(value)))
 }
 
-function normalizeList(value: unknown): string[] {
+function normalizeList(value: unknown, maxLength: number): string[] {
   if (!Array.isArray(value)) {
     return []
   }
@@ -57,20 +118,105 @@ function normalizeList(value: unknown): string[] {
     .filter((item) => typeof item === "string")
     .map((item) => item.trim())
     .filter(Boolean)
-    .slice(0, 5)
+    .slice(0, maxLength)
+}
+
+function normalizeDetailedRecommendations(
+  value: unknown,
+): DetailedRecommendation[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .filter((item) => typeof item === "object" && item !== null)
+    .map((item) => {
+      const record = item as Record<string, unknown>
+
+      return {
+        title: typeof record.title === "string" ? record.title.trim() : "",
+        whyItMatters:
+          typeof record.whyItMatters === "string"
+            ? record.whyItMatters.trim()
+            : "",
+        recommendedAction:
+          typeof record.recommendedAction === "string"
+            ? record.recommendedAction.trim()
+            : "",
+        example: typeof record.example === "string" ? record.example.trim() : "",
+      }
+    })
+    .filter(
+      (item) =>
+        item.title && item.whyItMatters && item.recommendedAction && item.example,
+    )
+    .slice(0, 3)
+}
+
+function buildFallbackDetailedRecommendations(
+  improvements: string[],
+): DetailedRecommendation[] {
+  const fallback = [
+    {
+      title: "Clarify your value proposition",
+      whyItMatters:
+        "Users decide in seconds whether the page is relevant to them.",
+      recommendedAction:
+        "Make the main headline specific about the audience and benefit.",
+      example: "Get a complete website audit in under 2 minutes.",
+    },
+    {
+      title: "Strengthen the main CTA",
+      whyItMatters: "A clear next step improves conversion rates.",
+      recommendedAction:
+        "Place one primary CTA above the fold with high color contrast.",
+      example: "Start your free audit",
+    },
+    {
+      title: "Add trust elements",
+      whyItMatters:
+        "Trust signals reduce hesitation before users take action.",
+      recommendedAction:
+        "Add testimonials, logos, or social proof near the hero section.",
+      example: "Trusted by 500+ startups",
+    },
+  ]
+
+  return fallback.map((item, index) => ({
+    ...item,
+    recommendedAction: improvements[index] ?? item.recommendedAction,
+  }))
 }
 
 function parseAuditResult(raw: string): AuditResult {
   const normalized = raw.trim().replace(/^```json\s*/i, "").replace(/\s*```$/, "")
   const parsed = JSON.parse(normalized) as Record<string, unknown>
 
+  const problems = normalizeList(parsed.problems, 5)
+  const improvements = normalizeList(parsed.improvements, 5)
+  const quickWins = normalizeList(parsed.quickWins, 3)
+  const detailedRecommendations = normalizeDetailedRecommendations(
+    parsed.detailedRecommendations,
+  )
+
   return {
     overallScore: clampScore(parsed.overallScore),
     seoScore: clampScore(parsed.seoScore),
     conversionScore: clampScore(parsed.conversionScore),
     uxScore: clampScore(parsed.uxScore),
-    problems: normalizeList(parsed.problems),
-    improvements: normalizeList(parsed.improvements),
+    problems,
+    improvements,
+    quickWins:
+      quickWins.length === 3
+        ? quickWins
+        : [
+            ...(quickWins.length > 0 ? quickWins : improvements.slice(0, 3)),
+            ...MOCK_AUDIT_RESULT.quickWins,
+          ].slice(0, 3),
+    detailedRecommendations:
+      detailedRecommendations.length === 3
+        ? detailedRecommendations
+        : buildFallbackDetailedRecommendations(improvements),
   }
 }
 

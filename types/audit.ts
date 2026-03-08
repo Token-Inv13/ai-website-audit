@@ -1,3 +1,10 @@
+export interface DetailedRecommendation {
+  title: string
+  whyItMatters: string
+  recommendedAction: string
+  example: string
+}
+
 export interface AuditResult {
   overallScore: number
   seoScore: number
@@ -5,6 +12,8 @@ export interface AuditResult {
   uxScore: number
   problems: string[]
   improvements: string[]
+  quickWins: string[]
+  detailedRecommendations: DetailedRecommendation[]
 }
 
 export interface ScrapedWebsiteData {

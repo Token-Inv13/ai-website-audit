@@ -3,6 +3,8 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 
+import { getApiErrorMessage, getErrorMessage } from "@/lib/error"
+
 export default function UrlForm() {
   const router = useRouter()
   const [url, setUrl] = useState("")
@@ -37,17 +39,21 @@ export default function UrlForm() {
         body: JSON.stringify({ url: normalizedUrl }),
       })
 
-      const payload = (await response.json()) as { id?: string; error?: string }
+      const payload = (await response
+        .json()
+        .catch(() => null)) as { id?: string } | null
 
-      if (!response.ok || !payload.id) {
-        throw new Error(payload.error || "Unable to run audit.")
+      if (!response.ok) {
+        throw new Error(getApiErrorMessage(payload, "Unable to run audit."))
+      }
+
+      if (!payload?.id) {
+        throw new Error("Unable to run audit.")
       }
 
       router.push(`/result/${payload.id}`)
     } catch (submitError) {
-      const message =
-        submitError instanceof Error ? submitError.message : "Unable to run audit."
-      setError(message)
+      setError(getErrorMessage(submitError, "Unable to run audit."))
     } finally {
       setLoading(false)
     }

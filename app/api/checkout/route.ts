@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import Stripe from "stripe"
 
 import { hasAudit } from "@/lib/auditStore"
+import { getErrorMessage } from "@/lib/error"
 
 interface CheckoutRequestBody {
   auditId?: string
@@ -58,7 +59,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ url: session.url }, { status: 200 })
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error"
+    console.error("POST /api/checkout failed:", error)
+    const message = getErrorMessage(error, "Internal server error")
 
     if (message.includes("STRIPE_SECRET_KEY")) {
       return NextResponse.json(
@@ -68,8 +70,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { error: "Checkout session creation failed." },
-      { status: 502 },
+      { error: "Internal server error" },
+      { status: 500 },
     )
   }
 }

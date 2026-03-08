@@ -61,7 +61,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ## Mode mock local (sans coût OpenAI)
 
 - Activer `MOCK_AI=true` pour éviter tout appel réel à l'API OpenAI.
-- En mode mock, l'audit retourne un rapport cohérent fixe (scores, 5 problèmes, 5 recommandations).
+- En mode mock, l'audit retourne un rapport cohérent fixe (scores, problèmes, améliorations, quick wins et recommandations détaillées).
 - Ce mode permet de tester localement tout le flow produit sans clé OpenAI ni coût API.
 - Pour repasser en mode réel, mettre `MOCK_AI=false` et renseigner `OPENAI_API_KEY`.
 
@@ -76,11 +76,11 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 1. L'utilisateur lance un audit gratuit.
 2. Le résultat est enregistré en base SQLite avec un ID unique (`unlocked=false`).
-3. La page `/result/{id}` affiche les scores + un aperçu limité (2 problèmes, 2 améliorations).
+3. La page `/result/{id}` affiche les scores + quick wins + un aperçu limité (2 problèmes, 2 améliorations).
 4. L'utilisateur clique sur "Unlock Full Report — $9".
 5. Stripe Checkout s'ouvre.
 6. Après paiement, retour sur `/result/{id}?unlocked=1`.
-7. L'audit est marqué `unlocked=true` en base et reste persistant après redémarrage serveur.
+7. L'audit est marqué `unlocked=true` en base et reste persistant après redémarrage serveur (les recommandations détaillées deviennent visibles).
 
 ## Structure
 
