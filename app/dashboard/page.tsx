@@ -2,6 +2,8 @@ import Link from "next/link"
 
 import { listRecentAudits } from "@/lib/auditStore"
 
+export const dynamic = "force-dynamic"
+
 function formatDate(value: string): string {
   const date = new Date(value)
 
