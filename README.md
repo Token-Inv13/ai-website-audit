@@ -78,11 +78,13 @@ NEXT_PUBLIC_APP_URL=https://ai-website-audit-beta.vercel.app
 1. L'utilisateur lance un audit gratuit.
 2. Le résultat est enregistré en base Postgres avec un ID unique (`unlocked=false`).
 3. La page `/result/{id}` affiche les scores + quick wins + copy suggestions + un aperçu limité (2 problèmes, 2 améliorations).
-4. L'utilisateur peut télécharger un PDF depuis `/api/report/{id}` (preview ou full selon `unlocked`).
-5. L'utilisateur clique sur "Unlock Full Report — $9".
-6. Stripe Checkout s'ouvre.
-7. Après paiement, retour sur `/result/{id}?unlocked=1`.
-8. L'audit est marqué `unlocked=true` en base et reste persistant après redémarrage serveur (les recommandations détaillées deviennent visibles).
+4. La homepage propose un Quick Scan SEO gratuit (`/api/quick-scan`) pour un diagnostic immédiat sans IA.
+5. L'utilisateur peut partager le lien du rapport directement depuis `/result/{id}`.
+6. L'utilisateur peut télécharger un PDF depuis `/api/report/{id}` (preview ou full selon `unlocked`).
+7. L'utilisateur clique sur "Unlock Full Report — $9".
+8. Stripe Checkout s'ouvre.
+9. Après paiement, retour sur `/result/{id}?unlocked=1`.
+10. L'audit est marqué `unlocked=true` en base et reste persistant après redémarrage serveur (les recommandations détaillées deviennent visibles).
 
 ## Structure
 
@@ -92,6 +94,7 @@ NEXT_PUBLIC_APP_URL=https://ai-website-audit-beta.vercel.app
 - `app/api/audit/route.ts` : génération audit + persistance
 - `app/api/audit/[id]/route.ts` : lecture audit (preview/full)
 - `app/api/audits/route.ts` : liste des audits récents (dashboard)
+- `app/api/quick-scan/route.ts` : mini diagnostic SEO rapide (sans IA, sans persistance)
 - `app/api/report/[id]/route.ts` : export PDF du rapport (preview/full)
 - `app/api/checkout/route.ts` : création session Stripe Checkout
 - `app/api/checkout/success/route.ts` : callback succès + déverrouillage persistant

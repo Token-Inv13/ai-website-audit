@@ -26,6 +26,7 @@ export default function ResultPage() {
   const [error, setError] = useState("")
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [checkoutError, setCheckoutError] = useState("")
+  const [shareFeedback, setShareFeedback] = useState("")
 
   const hasValidId = typeof id === "string" && id.length > 0
   const unlockedFromQuery = searchParams.get("unlocked") === "1"
@@ -118,6 +119,57 @@ export default function ResultPage() {
     }
   }
 
+  function buildShareUrl(): string | null {
+    if (!id) {
+      return null
+    }
+
+    const base =
+      process.env.NEXT_PUBLIC_APP_URL && process.env.NEXT_PUBLIC_APP_URL.trim()
+        ? process.env.NEXT_PUBLIC_APP_URL
+        : window.location.origin
+
+    return `${base.replace(/\/$/, "")}/result/${id}`
+  }
+
+  async function handleShareReport() {
+    const shareUrl = buildShareUrl()
+
+    if (!shareUrl) {
+      setShareFeedback("Unable to build report link.")
+      return
+    }
+
+    setShareFeedback("")
+
+    try {
+      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+        await navigator.share({
+          title: "Website Audit Report",
+          text: "Check this website audit report.",
+          url: shareUrl,
+        })
+        setShareFeedback("Report link shared.")
+        return
+      }
+
+      await navigator.clipboard.writeText(shareUrl)
+      setShareFeedback("Report link copied.")
+    } catch (shareError) {
+      const message = getErrorMessage(shareError, "Unable to share report.")
+      if (message.toLowerCase().includes("abort")) {
+        return
+      }
+
+      try {
+        await navigator.clipboard.writeText(shareUrl)
+        setShareFeedback("Report link copied.")
+      } catch {
+        setShareFeedback("Unable to copy report link.")
+      }
+    }
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden px-4 py-10 sm:py-14">
       <div className="pointer-events-none absolute inset-0 -z-10">
@@ -140,7 +192,7 @@ export default function ResultPage() {
                 Prioritized improvements for SEO, conversion, and UX with clear execution guidance.
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               {hasValidId ? (
                 <a
                   href={`/api/report/${id}`}
@@ -149,12 +201,26 @@ export default function ResultPage() {
                   Download PDF
                 </a>
               ) : null}
+              {hasValidId ? (
+                <button
+                  type="button"
+                  onClick={handleShareReport}
+                  className="rounded-xl border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium text-slate-700 backdrop-blur transition hover:bg-white"
+                >
+                  Share Report
+                </button>
+              ) : null}
               <Link
                 href="/"
                 className="rounded-xl border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium text-slate-700 backdrop-blur transition hover:bg-white"
               >
                 New Audit
               </Link>
+              {shareFeedback ? (
+                <p className="w-full text-right text-xs font-medium text-slate-600">
+                  {shareFeedback}
+                </p>
+              ) : null}
             </div>
           </div>
         </header>

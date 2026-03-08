@@ -41,3 +41,25 @@ export interface RecentAuditSummary {
   unlocked: boolean
   createdAt: string
 }
+
+export type QuickScanStatus = "present" | "missing" | "warning"
+
+export interface QuickScanCheck {
+  status: QuickScanStatus
+  message: string
+}
+
+export interface QuickScanResult {
+  url: string
+  score: number
+  checks: {
+    title: QuickScanCheck
+    metaDescription: QuickScanCheck
+    h1: QuickScanCheck
+    https: QuickScanCheck
+    canonical: QuickScanCheck
+    robots: QuickScanCheck
+    titleLength: QuickScanCheck
+    metaDescriptionLength: QuickScanCheck
+  }
+}
