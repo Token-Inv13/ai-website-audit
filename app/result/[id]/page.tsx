@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useParams, useSearchParams } from "next/navigation"
 
@@ -26,7 +26,10 @@ export default function ResultPage() {
   const [error, setError] = useState("")
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [checkoutError, setCheckoutError] = useState("")
+  const [isShareOpen, setIsShareOpen] = useState(false)
+  const [shareUrl, setShareUrl] = useState("")
   const [shareFeedback, setShareFeedback] = useState("")
+  const shareUrlInputRef = useRef<HTMLInputElement | null>(null)
 
   const hasValidId = typeof id === "string" && id.length > 0
   const unlockedFromQuery = searchParams.get("unlocked") === "1"
@@ -132,35 +135,65 @@ export default function ResultPage() {
     return `${base.replace(/\/$/, "")}/result/${id}`
   }
 
-  async function handleShareReport() {
-    const shareUrl = buildShareUrl()
+  useEffect(() => {
+    if (!isShareOpen) {
+      return
+    }
 
-    if (!shareUrl) {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsShareOpen(false)
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    shareUrlInputRef.current?.focus()
+    shareUrlInputRef.current?.select()
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [isShareOpen])
+
+  function openShareModal() {
+    const nextShareUrl = buildShareUrl()
+
+    if (!nextShareUrl) {
       setShareFeedback("Unable to build report link.")
       return
     }
 
+    setShareUrl(nextShareUrl)
     setShareFeedback("")
+    setIsShareOpen(true)
+  }
 
+  async function handleCopyShareUrl() {
     try {
-      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-        await navigator.share({
-          title: "Website Audit Report",
-          text: "Check this website audit report.",
-          url: shareUrl,
-        })
-        setShareFeedback("Report link shared.")
-        return
-      }
-
       await navigator.clipboard.writeText(shareUrl)
       setShareFeedback("Report link copied.")
+    } catch {
+      setShareFeedback("Unable to copy report link.")
+    }
+  }
+
+  async function handleNativeShare() {
+    if (typeof navigator === "undefined" || typeof navigator.share !== "function") {
+      return
+    }
+
+    try {
+      await navigator.share({
+        title: "Website Audit Report",
+        text: "Check this website audit report.",
+        url: shareUrl,
+      })
+      setShareFeedback("Report link shared.")
     } catch (shareError) {
       const message = getErrorMessage(shareError, "Unable to share report.")
       if (message.toLowerCase().includes("abort")) {
         return
       }
-
       try {
         await navigator.clipboard.writeText(shareUrl)
         setShareFeedback("Report link copied.")
@@ -204,7 +237,7 @@ export default function ResultPage() {
               {hasValidId ? (
                 <button
                   type="button"
-                  onClick={handleShareReport}
+                  onClick={openShareModal}
                   className="rounded-xl border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium text-slate-700 backdrop-blur transition hover:bg-white"
                 >
                   Share Report
@@ -216,11 +249,6 @@ export default function ResultPage() {
               >
                 New Audit
               </Link>
-              {shareFeedback ? (
-                <p className="w-full text-right text-xs font-medium text-slate-600">
-                  {shareFeedback}
-                </p>
-              ) : null}
             </div>
           </div>
         </header>
@@ -262,6 +290,70 @@ export default function ResultPage() {
           />
         ) : null}
       </div>
+
+      {isShareOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-[2px]"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsShareOpen(false)
+            }
+          }}
+        >
+          <div className="w-full max-w-xl rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_30px_80px_-35px_rgba(15,23,42,0.6)] sm:p-7">
+            <h2 className="text-xl font-semibold text-slate-900">Share Report</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Copy and share this report link. Access level still follows the current unlock rules.
+            </p>
+
+            <div className="mt-5">
+              <label
+                htmlFor="share-report-url"
+                className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+              >
+                Report Link
+              </label>
+              <input
+                ref={shareUrlInputRef}
+                id="share-report-url"
+                readOnly
+                value={shareUrl}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-200"
+              />
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopyShareUrl}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+              >
+                Copy Link
+              </button>
+              {typeof navigator !== "undefined" && typeof navigator.share === "function" ? (
+                <button
+                  type="button"
+                  onClick={handleNativeShare}
+                  className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Share
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setIsShareOpen(false)}
+                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Close
+              </button>
+            </div>
+
+            {shareFeedback ? (
+              <p className="mt-3 text-sm font-medium text-slate-600">{shareFeedback}</p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </main>
   )
 }
