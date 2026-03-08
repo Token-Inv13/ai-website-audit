@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 
+import { Prisma } from "@prisma/client"
 import { NextResponse } from "next/server"
 
 import { analyzeWebsite } from "@/lib/analyze"
@@ -11,12 +12,42 @@ interface AuditRequestBody {
   url?: string
 }
 
+export const runtime = "nodejs"
+
 function isValidHttpUrl(value: string): boolean {
   try {
     const parsed = new URL(value)
     return parsed.protocol === "http:" || parsed.protocol === "https:"
   } catch {
     return false
+  }
+}
+
+function getDatabaseRuntimeDiagnostics() {
+  const raw = process.env.DATABASE_URL
+
+  if (!raw) {
+    return {
+      hasDatabaseUrl: false,
+    }
+  }
+
+  try {
+    const parsed = new URL(raw)
+
+    return {
+      hasDatabaseUrl: true,
+      protocol: parsed.protocol.replace(":", ""),
+      host: parsed.hostname,
+      port: parsed.port || "(default)",
+      usesSupabasePooler: parsed.hostname.includes("pooler.supabase.com"),
+      hasPgbouncerFlag: parsed.searchParams.get("pgbouncer") === "true",
+    }
+  } catch {
+    return {
+      hasDatabaseUrl: true,
+      parseable: false,
+    }
   }
 }
 
@@ -33,11 +64,46 @@ export async function POST(request: Request) {
     const result = await analyzeWebsite(scrapedData)
 
     const id = randomUUID()
+    console.info("POST /api/audit attempting database save", {
+      auditId: id,
+      auditedHost: new URL(url).hostname,
+      db: getDatabaseRuntimeDiagnostics(),
+    })
     await createAudit({ id, url, result })
+    console.info("POST /api/audit database save succeeded", {
+      auditId: id,
+    })
 
     return NextResponse.json({ id }, { status: 200 })
   } catch (error) {
-    console.error("POST /api/audit failed:", error)
+    const prismaError =
+      error instanceof Prisma.PrismaClientKnownRequestError ||
+      error instanceof Prisma.PrismaClientInitializationError ||
+      error instanceof Prisma.PrismaClientValidationError ||
+      error instanceof Prisma.PrismaClientRustPanicError
+        ? error
+        : null
+
+    console.error("POST /api/audit failed", {
+      message: getErrorMessage(error, "Internal server error"),
+      prisma: prismaError
+        ? {
+            name: prismaError.name,
+            code:
+              "code" in prismaError && typeof prismaError.code === "string"
+                ? prismaError.code
+                : undefined,
+            meta:
+              "meta" in prismaError &&
+              typeof prismaError.meta === "object" &&
+              prismaError.meta !== null
+                ? prismaError.meta
+                : undefined,
+          }
+        : null,
+      db: getDatabaseRuntimeDiagnostics(),
+      error,
+    })
     const message = getErrorMessage(error, "Internal server error")
 
     if (message.includes("OPENAI_API_KEY")) {
@@ -61,7 +127,11 @@ export async function POST(request: Request) {
       )
     }
 
-    if (message.toLowerCase().includes("database") || message.toLowerCase().includes("prisma")) {
+    if (
+      prismaError ||
+      message.toLowerCase().includes("database") ||
+      message.toLowerCase().includes("prisma")
+    ) {
       return NextResponse.json(
         { error: "Database error while saving audit." },
         { status: 500 },

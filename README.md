@@ -51,6 +51,7 @@ Application disponible sur `http://localhost:3000` en local.
 
 ```env
 DATABASE_URL="postgresql://postgres:your_password@db.your-project.supabase.co:5432/postgres?schema=public"
+DIRECT_URL="postgresql://postgres:your_password@db.your-project.supabase.co:5432/postgres?schema=public"
 MOCK_AI=true
 OPENAI_API_KEY=
 STRIPE_SECRET_KEY=your_stripe_secret_key
@@ -96,5 +97,7 @@ NEXT_PUBLIC_APP_URL=https://ai-website-audit-beta.vercel.app
 ## Notes MVP
 
 - Supabase Postgres est requis pour la persistance en production (Vercel).
-- Vérifier que `DATABASE_URL` côté Vercel pointe bien sur Supabase.
+- Vérifier que `DATABASE_URL` côté Vercel pointe bien sur le pooler Supabase (recommandé pour serverless), par exemple :
+  - `postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&schema=public`
+- Optionnel mais recommandé : conserver `DIRECT_URL` vers la connexion directe Supabase (`db.<project-ref>.supabase.co:5432`) pour les opérations Prisma hors runtime serverless.
 - `MOCK_AI=true` reste compatible pour tester le flow complet sans coût OpenAI.
