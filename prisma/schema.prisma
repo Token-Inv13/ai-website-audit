@@ -9,7 +9,12 @@ datasource db {
 
 model Audit {
   id              String   @id
+  manageToken     String?
   url             String
+  domainNormalized String?
+  isPublic        Boolean  @default(false)
+  publicSlug      String?
+  publicAt        DateTime?
   overallScore    Int
   seoScore        Int
   conversionScore Int
@@ -21,6 +26,13 @@ model Audit {
   copySuggestions Json     @default("{}")
   unlocked        Boolean  @default(false)
   stripeSessionId String?
+  email           String?
+  emailCapturedAt DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  @@index([domainNormalized])
+  @@index([publicSlug])
+  @@index([isPublic, domainNormalized, createdAt])
+  @@index([email])
 }

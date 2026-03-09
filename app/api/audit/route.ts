@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto"
 import { Prisma } from "@prisma/client"
 import { NextResponse } from "next/server"
 
+import { getAuditManageCookieName } from "@/lib/auditAccess"
 import { analyzeWebsite } from "@/lib/analyze"
 import { createAudit } from "@/lib/auditStore"
 import { getErrorMessage } from "@/lib/error"
@@ -69,12 +70,26 @@ export async function POST(request: Request) {
       auditedHost: new URL(url).hostname,
       db: getDatabaseRuntimeDiagnostics(),
     })
-    await createAudit({ id, url, result })
+    const createdAudit = await createAudit({ id, url, result })
     console.info("POST /api/audit database save succeeded", {
       auditId: id,
     })
 
-    return NextResponse.json({ id }, { status: 200 })
+    const response = NextResponse.json({ id }, { status: 200 })
+
+    if (createdAudit.manageToken) {
+      response.cookies.set({
+        name: getAuditManageCookieName(id),
+        value: createdAudit.manageToken,
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 365,
+      })
+    }
+
+    return response
   } catch (error) {
     const prismaError =
       error instanceof Prisma.PrismaClientKnownRequestError ||

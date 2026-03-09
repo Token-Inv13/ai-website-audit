@@ -2,15 +2,19 @@
 
 import { useState } from "react"
 
+import { getScoreBenchmark } from "@/lib/scoreBenchmark"
 import type { AuditResult } from "@/types/audit"
 
 interface AuditReportProps {
   result: AuditResult
   url?: string
   unlocked: boolean
+  emailCaptured?: boolean
   onUnlock?: () => void
   checkoutLoading?: boolean
   checkoutError?: string
+  canUnlock?: boolean
+  unlockHelperText?: string
 }
 
 type CopyKey = "headline" | "cta" | "meta"
@@ -73,9 +77,12 @@ export default function AuditReport({
   result,
   url,
   unlocked,
+  emailCaptured = true,
   onUnlock,
   checkoutLoading,
   checkoutError,
+  canUnlock = true,
+  unlockHelperText,
 }: AuditReportProps) {
   const [copiedKey, setCopiedKey] = useState<CopyKey | null>(null)
 
@@ -109,26 +116,45 @@ export default function AuditReport({
         </div>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {scoreItems.map((item) => (
-            <article
-              key={item.key}
-              className="rounded-2xl border border-slate-200/70 bg-gradient-to-b from-white to-slate-50/90 p-5 shadow-sm"
-            >
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                {item.label}
-              </p>
-              <p
-                className={`mt-3 bg-gradient-to-r ${item.accent} bg-clip-text text-4xl font-bold text-transparent`}
+          {scoreItems.map((item) => {
+            const score = result[item.key]
+            const benchmark = getScoreBenchmark(score)
+
+            return (
+              <article
+                key={item.key}
+                className="rounded-2xl border border-slate-200/70 bg-gradient-to-b from-white to-slate-50/90 p-5 shadow-sm"
               >
-                {result[item.key]}
-                <span className="text-lg text-slate-500">/100</span>
-              </p>
-            </article>
-          ))}
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {item.label}
+                </p>
+                <p
+                  className={`mt-3 bg-gradient-to-r ${item.accent} bg-clip-text text-4xl font-bold text-transparent`}
+                >
+                  {score}
+                  <span className="text-lg text-slate-500">/100</span>
+                </p>
+                <p className="mt-3">
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${benchmark.badgeClassName}`}
+                  >
+                    {benchmark.label}
+                  </span>
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                  {benchmark.benchmarkText}
+                </p>
+              </article>
+            )
+          })}
         </div>
       </section>
 
-      <section className="soft-panel border-violet-200/70 bg-gradient-to-br from-violet-50/95 to-white p-6 sm:p-8">
+      <section
+        className={`relative soft-panel border-violet-200/70 bg-gradient-to-br from-violet-50/95 to-white p-6 sm:p-8 ${
+          !emailCaptured ? "pointer-events-none select-none opacity-60 blur-[6px]" : ""
+        }`}
+      >
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-xl font-semibold text-slate-900">Copy Suggestions</h3>
           <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-violet-700">
@@ -188,7 +214,11 @@ export default function AuditReport({
         </div>
       </section>
 
-      <section className="soft-panel border-emerald-200/70 bg-gradient-to-br from-emerald-50/95 to-white p-6 sm:p-8">
+      <section
+        className={`relative soft-panel border-emerald-200/70 bg-gradient-to-br from-emerald-50/95 to-white p-6 sm:p-8 ${
+          !emailCaptured ? "pointer-events-none select-none opacity-60 blur-[6px]" : ""
+        }`}
+      >
         <div className="flex items-center justify-between gap-3">
           <h3 className="text-xl font-semibold text-emerald-900">Quick Wins</h3>
           <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
@@ -210,8 +240,12 @@ export default function AuditReport({
         </ul>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <article className="soft-panel border-red-100/90 p-6">
+      <section
+        className={`grid gap-6 lg:grid-cols-2 ${
+          !emailCaptured ? "pointer-events-none select-none opacity-60 blur-[6px]" : ""
+        }`}
+      >
+        <article className="soft-panel relative border-red-100/90 p-6">
           <h3 className="text-xl font-semibold text-slate-900">Problems Found</h3>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-slate-700">
             {result.problems.map((problem, index) => (
@@ -221,7 +255,7 @@ export default function AuditReport({
           </ul>
         </article>
 
-        <article className="soft-panel border-blue-100/90 p-6">
+        <article className="soft-panel relative border-blue-100/90 p-6">
           <h3 className="text-xl font-semibold text-slate-900">Improvement Suggestions</h3>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-slate-700">
             {result.improvements.map((improvement, index) => (
@@ -232,7 +266,11 @@ export default function AuditReport({
         </article>
       </section>
 
-      <section className="soft-panel p-6 sm:p-8">
+      <section
+        className={`relative soft-panel p-6 sm:p-8 ${
+          !emailCaptured ? "pointer-events-none select-none opacity-60 blur-[6px]" : ""
+        }`}
+      >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-xl font-semibold text-slate-900">Detailed Recommendations</h3>
           {!unlocked ? (
@@ -278,6 +316,14 @@ export default function AuditReport({
         </div>
       </section>
 
+      {!emailCaptured ? (
+        <div className="soft-panel border-blue-200/70 bg-blue-50/80 p-4">
+          <p className="text-sm font-medium text-blue-800">
+            Unlock this preview with your email.
+          </p>
+        </div>
+      ) : null}
+
       {!unlocked ? (
         <section className="rounded-2xl border border-blue-300/80 bg-gradient-to-br from-blue-600 to-cyan-600 p-6 text-white shadow-[0_22px_60px_-24px_rgba(37,99,235,0.8)] sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-100">Upgrade</p>
@@ -288,11 +334,14 @@ export default function AuditReport({
           <button
             type="button"
             onClick={onUnlock}
-            disabled={checkoutLoading}
+            disabled={checkoutLoading || !canUnlock}
             className="mt-6 rounded-xl bg-white px-6 py-3 font-semibold text-blue-700 shadow-md transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {checkoutLoading ? "Redirecting to checkout..." : "Unlock Full Report — $9"}
           </button>
+          {!canUnlock && unlockHelperText ? (
+            <p className="mt-3 text-sm text-blue-100">{unlockHelperText}</p>
+          ) : null}
           {checkoutError ? <p className="mt-3 text-sm text-red-100">{checkoutError}</p> : null}
         </section>
       ) : null}

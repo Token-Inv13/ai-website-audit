@@ -42,6 +42,15 @@ export interface RecentAuditSummary {
   createdAt: string
 }
 
+export interface PublicAuditReport {
+  id: string
+  url: string
+  domainNormalized: string
+  publicSlug: string | null
+  createdAt: string
+  result: AuditResult
+}
+
 export type QuickScanStatus = "present" | "missing" | "warning"
 
 export interface QuickScanCheck {

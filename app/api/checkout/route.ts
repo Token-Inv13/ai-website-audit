@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server"
 import Stripe from "stripe"
 
-import { hasAudit } from "@/lib/auditStore"
+import {
+  getAuditCapturedEmail,
+  hasAudit,
+  hasAuditWithCapturedEmail,
+} from "@/lib/auditStore"
 import { getErrorMessage } from "@/lib/error"
 
 interface CheckoutRequestBody {
@@ -31,6 +35,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Audit not found." }, { status: 404 })
     }
 
+    if (!(await hasAuditWithCapturedEmail(auditId))) {
+      return NextResponse.json(
+        { error: "Please enter your email before unlocking the full report." },
+        { status: 400 },
+      )
+    }
+
+    const capturedEmail = await getAuditCapturedEmail(auditId)
+
     const appUrl = process.env.NEXT_PUBLIC_APP_URL
     const priceId = process.env.STRIPE_PRICE_ID
 
@@ -48,6 +61,7 @@ export async function POST(request: Request) {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${appUrl}/api/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/result/${auditId}`,
+      customer_email: capturedEmail ?? undefined,
       metadata: {
         auditId,
       },
