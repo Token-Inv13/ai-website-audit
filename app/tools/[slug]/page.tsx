@@ -2,27 +2,27 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import ProgrammaticLandingPage from "@/components/ProgrammaticLandingPage"
-import { getPlatformPageBySlug, platformIntentPages } from "@/lib/programmaticSeo"
+import { getToolIntentPageBySlug, toolIntentPages } from "@/lib/programmaticSeo"
 
 export const dynamicParams = false
 
 interface PageParams {
   params: Promise<{
-    type: string
+    slug: string
   }>
 }
 
 export function generateStaticParams() {
-  return platformIntentPages.map((page) => ({ type: page.slug }))
+  return toolIntentPages.map((page) => ({ slug: page.slug }))
 }
 
 export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
-  const { type } = await params
-  const page = getPlatformPageBySlug(type)
+  const { slug } = await params
+  const page = getToolIntentPageBySlug(slug)
 
   if (!page) {
     return {
-      title: "Website Audit | AI Website Audit",
+      title: "SEO Tools | AI Website Audit",
       description: "Analyze your website and get actionable SEO, UX, and conversion insights.",
       robots: {
         index: false,
@@ -35,13 +35,13 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     title: page.metaTitle,
     description: page.metaDescription,
     alternates: {
-      canonical: `/audit/${page.slug}`,
+      canonical: `/tools/${page.slug}`,
     },
     openGraph: {
       type: "website",
       title: page.metaTitle,
       description: page.metaDescription,
-      url: `/audit/${page.slug}`,
+      url: `/tools/${page.slug}`,
       siteName: "AI Website Audit",
     },
     twitter: {
@@ -52,13 +52,13 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
   }
 }
 
-export default async function AuditTypePage({ params }: PageParams) {
-  const { type } = await params
-  const page = getPlatformPageBySlug(type)
+export default async function ToolIntentPage({ params }: PageParams) {
+  const { slug } = await params
+  const page = getToolIntentPageBySlug(slug)
 
   if (!page) {
     notFound()
   }
 
-  return <ProgrammaticLandingPage content={page} canonicalPath={`/audit/${page.slug}`} />
+  return <ProgrammaticLandingPage content={page} canonicalPath={`/tools/${page.slug}`} />
 }

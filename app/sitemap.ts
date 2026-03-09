@@ -1,22 +1,17 @@
 import type { MetadataRoute } from "next"
 
-import { listRecentAudits } from "@/lib/auditStore"
+import { listPublicReportDomains } from "@/lib/auditStore"
+import {
+  industryIntentPages,
+  platformIntentPages,
+  toolIntentPages,
+} from "@/lib/programmaticSeo"
 
 const appUrl =
   process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "https://ai-website-audit-beta.vercel.app"
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
-  const auditTypes = [
-    "wordpress",
-    "shopify",
-    "saas",
-    "startup",
-    "ecommerce",
-    "small-business",
-    "portfolio",
-    "agency",
-  ]
   const blogSlugs = [
     "how-to-audit-your-website",
     "website-seo-checklist",
@@ -31,12 +26,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
-      url: `${appUrl}/dashboard`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.4,
-    },
-    {
       url: `${appUrl}/blog`,
       lastModified: now,
       changeFrequency: "weekly",
@@ -48,24 +37,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
       priority: 0.7,
     })),
-    ...auditTypes.map((type) => ({
-      url: `${appUrl}/audit/${type}`,
+    ...platformIntentPages.map((page) => ({
+      url: `${appUrl}/audit/${page.slug}`,
       lastModified: now,
       changeFrequency: "weekly" as const,
       priority: 0.7,
     })),
+    ...toolIntentPages.map((page) => ({
+      url: `${appUrl}/tools/${page.slug}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.72,
+    })),
+    ...industryIntentPages.map((page) => ({
+      url: `${appUrl}/solutions/${page.slug}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.72,
+    })),
   ]
 
   try {
-    const recentAudits = await listRecentAudits(25)
-    const resultPages: MetadataRoute.Sitemap = recentAudits.map((audit) => ({
-      url: `${appUrl}/result/${audit.id}`,
-      lastModified: new Date(audit.createdAt),
+    const publicReports = await listPublicReportDomains(500)
+    const reportPages: MetadataRoute.Sitemap = publicReports.map((audit) => ({
+      url: `${appUrl}/report/${encodeURIComponent(audit.domain)}`,
+      lastModified: new Date(audit.updatedAt),
       changeFrequency: "weekly",
       priority: 0.6,
     }))
 
-    return [...staticPages, ...resultPages]
+    return [...staticPages, ...reportPages]
   } catch {
     return staticPages
   }
