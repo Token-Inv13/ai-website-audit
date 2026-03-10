@@ -51,6 +51,7 @@ export default function ResultPage() {
 
   const hasValidId = typeof id === "string" && id.length > 0
   const unlockedFromQuery = searchParams.get("unlocked") === "1"
+  const paymentSuccessFromQuery = searchParams.get("payment") === "success"
 
   useEffect(() => {
     if (!hasValidId) {
@@ -405,10 +406,12 @@ export default function ResultPage() {
           </div>
         </header>
 
-        {unlockedFromQuery ? (
+        {unlockedFromQuery || paymentSuccessFromQuery ? (
           <div className="soft-panel border-emerald-200 bg-emerald-50/80 p-4">
             <p className="text-sm font-medium text-emerald-800">
-              Payment successful. Your full report is now unlocked.
+              {isUnlocked
+                ? "Payment successful. Your full report is now unlocked."
+                : "Payment received. Your report is being unlocked. Refresh in a few seconds if needed."}
             </p>
           </div>
         ) : null}

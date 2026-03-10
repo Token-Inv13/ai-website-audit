@@ -197,7 +197,33 @@ export async function unlockAudit(
   id: string,
   stripeSessionId?: string,
 ): Promise<boolean> {
-  const updateResult = await prisma.audit.updateMany({
+  const existing = await prisma.audit.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      unlocked: true,
+      stripeSessionId: true,
+    },
+  })
+
+  if (!existing) {
+    return false
+  }
+
+  if (existing.unlocked) {
+    if (stripeSessionId && !existing.stripeSessionId) {
+      await prisma.audit.update({
+        where: { id },
+        data: {
+          stripeSessionId,
+        },
+      })
+    }
+
+    return true
+  }
+
+  await prisma.audit.update({
     where: { id },
     data: {
       unlocked: true,
@@ -205,7 +231,7 @@ export async function unlockAudit(
     },
   })
 
-  return updateResult.count > 0
+  return true
 }
 
 export function normalizeEmail(value: string): string {

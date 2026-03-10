@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next"
 
-const appUrl =
-  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "https://ai-website-audit-beta.vercel.app"
+import { getPublicAppUrl } from "@/lib/publicAppUrl"
+
+const appUrl = getPublicAppUrl()
 
 export default function robots(): MetadataRoute.Robots {
   return {

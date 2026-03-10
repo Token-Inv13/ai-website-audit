@@ -1,9 +1,9 @@
 import type { Metadata } from "next"
 
 import "./globals.css"
+import { getPublicAppUrl } from "@/lib/publicAppUrl"
 
-const appUrl =
-  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "https://ai-website-audit-beta.vercel.app"
+const appUrl = getPublicAppUrl()
 
 const seoTitle =
   "AI Website Audit Tool — Analyze SEO, UX & Conversion in Seconds"

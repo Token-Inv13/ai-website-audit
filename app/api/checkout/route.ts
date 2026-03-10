@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server"
-import Stripe from "stripe"
 
 import {
   getAuditCapturedEmail,
@@ -7,19 +6,11 @@ import {
   hasAuditWithCapturedEmail,
 } from "@/lib/auditStore"
 import { getErrorMessage } from "@/lib/error"
+import { getPublicAppUrl } from "@/lib/publicAppUrl"
+import { getStripeClient } from "@/lib/stripe"
 
 interface CheckoutRequestBody {
   auditId?: string
-}
-
-function getStripeClient(): Stripe {
-  const secretKey = process.env.STRIPE_SECRET_KEY
-
-  if (!secretKey) {
-    throw new Error("STRIPE_SECRET_KEY is missing")
-  }
-
-  return new Stripe(secretKey)
 }
 
 export async function POST(request: Request) {
@@ -44,10 +35,10 @@ export async function POST(request: Request) {
 
     const capturedEmail = await getAuditCapturedEmail(auditId)
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL
-    const priceId = process.env.STRIPE_PRICE_ID
+    const appUrl = getPublicAppUrl()
+    const priceId = process.env.STRIPE_PRICE_ID?.trim()
 
-    if (!appUrl || !priceId) {
+    if (!priceId) {
       return NextResponse.json(
         { error: "Stripe configuration is incomplete." },
         { status: 500 },
@@ -64,6 +55,7 @@ export async function POST(request: Request) {
       customer_email: capturedEmail ?? undefined,
       metadata: {
         auditId,
+        capturedEmail: capturedEmail ?? "",
       },
     })
 

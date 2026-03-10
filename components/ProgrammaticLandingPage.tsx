@@ -1,15 +1,14 @@
 import Link from "next/link"
 
 import type { ProgrammaticLandingPage as ProgrammaticLandingPageData } from "@/lib/programmaticSeo"
+import { getPublicAppUrl } from "@/lib/publicAppUrl"
 
 interface ProgrammaticLandingPageProps {
   content: ProgrammaticLandingPageData
   canonicalPath: string
 }
 
-const appUrl =
-  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
-  "https://ai-website-audit-beta.vercel.app"
+const appUrl = getPublicAppUrl()
 
 export default function ProgrammaticLandingPage({
   content,

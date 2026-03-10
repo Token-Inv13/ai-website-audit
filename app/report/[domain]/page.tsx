@@ -3,10 +3,9 @@ import Link from "next/link"
 
 import { getLatestPublicAuditByDomain } from "@/lib/auditStore"
 import { normalizeDomainFromValue } from "@/lib/domain"
+import { getPublicAppUrl } from "@/lib/publicAppUrl"
 
-const appUrl =
-  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
-  "https://ai-website-audit-beta.vercel.app"
+const appUrl = getPublicAppUrl()
 
 interface PageParams {
   params: Promise<{

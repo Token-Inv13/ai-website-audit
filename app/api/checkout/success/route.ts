@@ -1,20 +1,10 @@
 import { NextResponse } from "next/server"
-import Stripe from "stripe"
 
-import { unlockAudit } from "@/lib/auditStore"
-
-function getStripeClient(): Stripe {
-  const secretKey = process.env.STRIPE_SECRET_KEY
-
-  if (!secretKey) {
-    throw new Error("STRIPE_SECRET_KEY is missing")
-  }
-
-  return new Stripe(secretKey)
-}
+import { getPublicAppUrl } from "@/lib/publicAppUrl"
+import { getCheckoutSessionAuditId, getStripeClient } from "@/lib/stripe"
 
 function buildRedirect(path: string, requestUrl: string): URL {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL
+  const appUrl = getPublicAppUrl()
 
   if (appUrl) {
     return new URL(path, appUrl)
@@ -34,24 +24,13 @@ export async function GET(request: Request) {
 
     const stripe = getStripeClient()
     const session = await stripe.checkout.sessions.retrieve(sessionId)
-
-    const auditId = session.metadata?.auditId
-
-    if (!auditId) {
-      return NextResponse.redirect(buildRedirect("/", request.url))
-    }
+    const auditId = getCheckoutSessionAuditId(session)
 
     const isPaid = session.payment_status === "paid"
 
     if (isPaid) {
-      const unlocked = await unlockAudit(auditId, session.id)
-
-      if (!unlocked) {
-        return NextResponse.redirect(buildRedirect("/", request.url))
-      }
-
       return NextResponse.redirect(
-        buildRedirect(`/result/${auditId}?unlocked=1`, request.url),
+        buildRedirect(`/result/${auditId}?payment=success`, request.url),
       )
     }
 

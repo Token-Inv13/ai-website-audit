@@ -6,9 +6,9 @@ import {
   platformIntentPages,
   toolIntentPages,
 } from "@/lib/programmaticSeo"
+import { getPublicAppUrl } from "@/lib/publicAppUrl"
 
-const appUrl =
-  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "https://ai-website-audit-beta.vercel.app"
+const appUrl = getPublicAppUrl()
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
