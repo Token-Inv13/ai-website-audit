@@ -59,6 +59,7 @@ export default function ResultPage() {
     }
 
     let active = true
+    let pollTimeout: number | null = null
 
     async function loadAudit() {
       try {
@@ -87,6 +88,12 @@ export default function ResultPage() {
         setIsPublic(payload.isPublic)
         setPublicPath(payload.publicPath)
         setCanManageVisibility(payload.canManageVisibility)
+
+        if (paymentSuccessFromQuery && !payload.unlocked && active) {
+          pollTimeout = window.setTimeout(() => {
+            void loadAudit()
+          }, 1500)
+        }
       } catch (loadError) {
         if (!active) {
           return
@@ -104,8 +111,11 @@ export default function ResultPage() {
 
     return () => {
       active = false
+      if (pollTimeout) {
+        window.clearTimeout(pollTimeout)
+      }
     }
-  }, [hasValidId, id, unlockedFromQuery])
+  }, [hasValidId, id, paymentSuccessFromQuery, unlockedFromQuery])
 
   async function handleCaptureEmail(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
