@@ -6,6 +6,10 @@ Version commerciale MVP incluse : aperçu gratuit + déblocage du rapport comple
 
 Le stockage est persistant via Prisma + Supabase Postgres (plus de source de vérité en mémoire `Map`).
 
+## Documentation dev
+
+- Fiche projet rapide : `DEV_GUIDE.md`
+
 ## Prérequis
 
 - Node.js 20+
