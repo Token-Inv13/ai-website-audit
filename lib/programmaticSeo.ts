@@ -44,7 +44,7 @@ export const toolIntentPages: ProgrammaticLandingPage[] = [
     title: "Free SEO Audit Tool",
     subtitle:
       "Run a quick SEO, UX, and conversion audit to uncover your top growth opportunities.",
-    metaTitle: "Free SEO Audit Tool | AI Website Audit",
+    metaTitle: "Free SEO Audit Tool | SEOAuditAI",
     metaDescription:
       "Use our free SEO audit tool to find ranking blockers, UX friction, and conversion issues in minutes.",
     whyItMatters:
@@ -70,7 +70,7 @@ export const toolIntentPages: ProgrammaticLandingPage[] = [
     title: "Website SEO Checker",
     subtitle:
       "Check your website SEO and uncover practical improvements you can apply quickly.",
-    metaTitle: "Website SEO Checker | AI Website Audit",
+    metaTitle: "Website SEO Checker | SEOAuditAI",
     metaDescription:
       "Analyze your website with an AI-powered SEO checker and identify issues affecting rankings and conversions.",
     whyItMatters:
@@ -96,7 +96,7 @@ export const toolIntentPages: ProgrammaticLandingPage[] = [
     title: "Website Audit Tool",
     subtitle:
       "Audit your website and get structured recommendations for SEO, UX, and conversion.",
-    metaTitle: "Website Audit Tool | AI Website Audit",
+    metaTitle: "Website Audit Tool | SEOAuditAI",
     metaDescription:
       "Run an AI website audit tool to evaluate SEO, UX, and conversion quality with actionable recommendations.",
     whyItMatters:
@@ -122,7 +122,7 @@ export const toolIntentPages: ProgrammaticLandingPage[] = [
     title: "Free Website Audit",
     subtitle:
       "Get a free website audit preview and identify the biggest opportunities on your site.",
-    metaTitle: "Free Website Audit | AI Website Audit",
+    metaTitle: "Free Website Audit | SEOAuditAI",
     metaDescription:
       "Start with a free website audit preview to discover SEO and UX issues affecting your performance.",
     whyItMatters:
@@ -148,7 +148,7 @@ export const toolIntentPages: ProgrammaticLandingPage[] = [
     title: "SEO Analyzer",
     subtitle:
       "Analyze your SEO performance and uncover practical fixes to improve visibility.",
-    metaTitle: "SEO Analyzer | AI Website Audit",
+    metaTitle: "SEO Analyzer | SEOAuditAI",
     metaDescription:
       "Use our SEO analyzer to review your website structure, metadata, and conversion clarity in minutes.",
     whyItMatters:
@@ -177,7 +177,7 @@ export const industryIntentPages: ProgrammaticLandingPage[] = [
     title: "SEO Audit for Lawyers",
     subtitle:
       "Improve legal website visibility and lead conversion with a focused website audit.",
-    metaTitle: "SEO Audit for Lawyers | AI Website Audit",
+    metaTitle: "SEO Audit for Lawyers | SEOAuditAI",
     metaDescription:
       "Run an SEO audit for lawyers to improve local visibility, trust signals, and case inquiry conversions.",
     whyItMatters:
@@ -203,7 +203,7 @@ export const industryIntentPages: ProgrammaticLandingPage[] = [
     title: "SEO Audit for Restaurants",
     subtitle:
       "Audit your restaurant website to improve local discovery and reservations.",
-    metaTitle: "SEO Audit for Restaurants | AI Website Audit",
+    metaTitle: "SEO Audit for Restaurants | SEOAuditAI",
     metaDescription:
       "Get an SEO audit for restaurants to improve local search visibility, menu page UX, and booking conversion.",
     whyItMatters:
@@ -229,7 +229,7 @@ export const industryIntentPages: ProgrammaticLandingPage[] = [
     title: "SEO Audit for Real Estate Websites",
     subtitle:
       "Optimize your real estate website for visibility, credibility, and lead generation.",
-    metaTitle: "SEO Audit for Real Estate Websites | AI Website Audit",
+    metaTitle: "SEO Audit for Real Estate Websites | SEOAuditAI",
     metaDescription:
       "Run an SEO audit for real estate websites to improve listing discoverability and lead conversion.",
     whyItMatters:
@@ -255,7 +255,7 @@ export const industryIntentPages: ProgrammaticLandingPage[] = [
     title: "SEO Audit for Plumbers",
     subtitle:
       "Audit your plumbing website and improve local SEO and quote request conversion.",
-    metaTitle: "SEO Audit for Plumbers | AI Website Audit",
+    metaTitle: "SEO Audit for Plumbers | SEOAuditAI",
     metaDescription:
       "Use a plumbing SEO audit to improve local rankings, service-page clarity, and lead conversion.",
     whyItMatters:
@@ -281,7 +281,7 @@ export const industryIntentPages: ProgrammaticLandingPage[] = [
     title: "SEO Audit for Photographers",
     subtitle:
       "Improve your photography website’s visibility and inquiry conversion with a focused audit.",
-    metaTitle: "SEO Audit for Photographers | AI Website Audit",
+    metaTitle: "SEO Audit for Photographers | SEOAuditAI",
     metaDescription:
       "Run an SEO audit for photographers to improve portfolio discoverability and booking inquiries.",
     whyItMatters:
@@ -310,7 +310,7 @@ export const platformIntentPages: ProgrammaticLandingPage[] = [
     title: "WordPress Website Audit",
     subtitle:
       "Analyze your WordPress website and prioritize SEO, UX, and conversion improvements.",
-    metaTitle: "WordPress Website Audit | AI Website Audit",
+    metaTitle: "WordPress Website Audit | SEOAuditAI",
     metaDescription:
       "Run a WordPress website audit to detect SEO gaps, UX friction, and conversion blockers quickly.",
     whyItMatters:
@@ -336,7 +336,7 @@ export const platformIntentPages: ProgrammaticLandingPage[] = [
     title: "Shopify Website Audit",
     subtitle:
       "Audit your Shopify store to improve product-page SEO and conversion performance.",
-    metaTitle: "Shopify Website Audit | AI Website Audit",
+    metaTitle: "Shopify Website Audit | SEOAuditAI",
     metaDescription:
       "Analyze your Shopify website with an AI audit for SEO, UX, and conversion improvements.",
     whyItMatters:
@@ -362,7 +362,7 @@ export const platformIntentPages: ProgrammaticLandingPage[] = [
     title: "SaaS Website Audit",
     subtitle:
       "Audit your SaaS landing pages to increase trial signups and demo requests.",
-    metaTitle: "SaaS Website Audit | AI Website Audit",
+    metaTitle: "SaaS Website Audit | SEOAuditAI",
     metaDescription:
       "Run a SaaS website audit to improve SEO, UX messaging, and conversion flow on core pages.",
     whyItMatters:
@@ -388,7 +388,7 @@ export const platformIntentPages: ProgrammaticLandingPage[] = [
     title: "Startup Website Audit",
     subtitle:
       "Improve startup positioning, SEO visibility, and conversion quality with a focused audit.",
-    metaTitle: "Startup Website Audit | AI Website Audit",
+    metaTitle: "Startup Website Audit | SEOAuditAI",
     metaDescription:
       "Get a startup website audit to identify SEO and UX issues that reduce traction and lead quality.",
     whyItMatters:
@@ -414,7 +414,7 @@ export const platformIntentPages: ProgrammaticLandingPage[] = [
     title: "Ecommerce Website Audit",
     subtitle:
       "Audit your ecommerce website to improve rankings, trust, and checkout conversion.",
-    metaTitle: "Ecommerce Website Audit | AI Website Audit",
+    metaTitle: "Ecommerce Website Audit | SEOAuditAI",
     metaDescription:
       "Analyze your ecommerce website with an SEO and conversion audit to improve product and category page performance.",
     whyItMatters:
@@ -440,7 +440,7 @@ export const platformIntentPages: ProgrammaticLandingPage[] = [
     title: "Small Business Website Audit",
     subtitle:
       "Audit your small business website to improve local visibility and lead generation.",
-    metaTitle: "Small Business Website Audit | AI Website Audit",
+    metaTitle: "Small Business Website Audit | SEOAuditAI",
     metaDescription:
       "Run a small business website audit to find SEO, UX, and conversion opportunities quickly.",
     whyItMatters:
@@ -466,7 +466,7 @@ export const platformIntentPages: ProgrammaticLandingPage[] = [
     title: "Portfolio Website Audit",
     subtitle:
       "Audit your portfolio website to improve discoverability and inbound inquiries.",
-    metaTitle: "Portfolio Website Audit | AI Website Audit",
+    metaTitle: "Portfolio Website Audit | SEOAuditAI",
     metaDescription:
       "Run a portfolio website audit to improve SEO visibility, readability, and lead conversion.",
     whyItMatters:
@@ -492,7 +492,7 @@ export const platformIntentPages: ProgrammaticLandingPage[] = [
     title: "Agency Website Audit",
     subtitle:
       "Audit your agency website to improve SEO, trust, and inbound lead quality.",
-    metaTitle: "Agency Website Audit | AI Website Audit",
+    metaTitle: "Agency Website Audit | SEOAuditAI",
     metaDescription:
       "Use an agency website audit to identify SEO and conversion gaps across service pages.",
     whyItMatters:
@@ -518,7 +518,7 @@ export const platformIntentPages: ProgrammaticLandingPage[] = [
     title: "Webflow Website Audit",
     subtitle:
       "Run a Webflow website audit to improve SEO fundamentals and conversion clarity.",
-    metaTitle: "Webflow Website Audit | AI Website Audit",
+    metaTitle: "Webflow Website Audit | SEOAuditAI",
     metaDescription:
       "Audit your Webflow website and find practical SEO, UX, and conversion opportunities.",
     whyItMatters:
@@ -544,7 +544,7 @@ export const platformIntentPages: ProgrammaticLandingPage[] = [
     title: "Wix Website Audit",
     subtitle:
       "Audit your Wix website to improve rankings, usability, and conversion potential.",
-    metaTitle: "Wix Website Audit | AI Website Audit",
+    metaTitle: "Wix Website Audit | SEOAuditAI",
     metaDescription:
       "Run a Wix website audit and identify SEO, UX, and conversion improvements in minutes.",
     whyItMatters:
@@ -570,7 +570,7 @@ export const platformIntentPages: ProgrammaticLandingPage[] = [
     title: "Squarespace Website Audit",
     subtitle:
       "Analyze your Squarespace website and improve SEO, UX, and conversion quality.",
-    metaTitle: "Squarespace Website Audit | AI Website Audit",
+    metaTitle: "Squarespace Website Audit | SEOAuditAI",
     metaDescription:
       "Run a Squarespace website audit to find SEO and conversion improvements for your key pages.",
     whyItMatters:
@@ -596,7 +596,7 @@ export const platformIntentPages: ProgrammaticLandingPage[] = [
     title: "Next.js Website Audit",
     subtitle:
       "Audit your Next.js website for SEO quality, UX clarity, and conversion opportunities.",
-    metaTitle: "Next.js Website Audit | AI Website Audit",
+    metaTitle: "Next.js Website Audit | SEOAuditAI",
     metaDescription:
       "Use this Next.js website audit to uncover SEO and conversion issues on your marketing pages.",
     whyItMatters:
@@ -622,7 +622,7 @@ export const platformIntentPages: ProgrammaticLandingPage[] = [
     title: "WooCommerce Website Audit",
     subtitle:
       "Audit your WooCommerce store to improve product visibility and conversion rates.",
-    metaTitle: "WooCommerce Website Audit | AI Website Audit",
+    metaTitle: "WooCommerce Website Audit | SEOAuditAI",
     metaDescription:
       "Run a WooCommerce website audit to optimize SEO, UX, and conversion performance for your store.",
     whyItMatters:

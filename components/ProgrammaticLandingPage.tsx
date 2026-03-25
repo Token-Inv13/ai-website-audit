@@ -1,5 +1,6 @@
 import Link from "next/link"
 
+import { BRAND_NAME } from "@/lib/branding"
 import type { ProgrammaticLandingPage as ProgrammaticLandingPageData } from "@/lib/programmaticSeo"
 import { getPublicAppUrl } from "@/lib/publicAppUrl"
 
@@ -38,7 +39,7 @@ export default function ProgrammaticLandingPage({
       <div className="mx-auto w-full max-w-5xl space-y-8">
         <section className="glass-card p-8 sm:p-10">
           <p className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
-            AI Website Audit
+            {BRAND_NAME}
           </p>
           <h1 className="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-5xl">
             {content.title}

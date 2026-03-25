@@ -1,4 +1,4 @@
-# AI Website Audit - Developer Guide
+# SEOAuditAI - Developer Guide
 
 Cette fiche sert de repere rapide pour comprendre le projet, retrouver les fichiers utiles, et intervenir sans perdre de temps.
 

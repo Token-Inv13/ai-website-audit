@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { getAudit } from "@/lib/auditStore"
+import { BRAND_DOMAIN } from "@/lib/branding"
 import { getVisibleAuditResult } from "@/lib/auditVisibility"
 import { getErrorMessage } from "@/lib/error"
 import { buildAuditReportPdf } from "@/lib/reportPdf"
@@ -14,13 +15,15 @@ interface Params {
 }
 
 function buildFilename(url: string): string {
+  const reportPrefix = BRAND_DOMAIN.replace(/[^a-z0-9]/gi, "-").toLowerCase()
+
   try {
     const host = new URL(url).hostname.replace(/^www\./, "")
     const normalized = host.replace(/[^a-z0-9.-]/gi, "-").toLowerCase()
 
-    return `website-audit-${normalized || "report"}.pdf`
+    return `${reportPrefix}-report-${normalized || "report"}.pdf`
   } catch {
-    return "website-audit-report.pdf"
+    return `${reportPrefix}-report.pdf`
   }
 }
 

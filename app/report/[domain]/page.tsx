@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 import { getLatestPublicAuditByDomain } from "@/lib/auditStore"
+import { BRAND_NAME, withBrandSuffix } from "@/lib/branding"
 import { normalizeDomainFromValue } from "@/lib/domain"
 import { getPublicAppUrl } from "@/lib/publicAppUrl"
 
@@ -57,8 +58,8 @@ export async function generateMetadata({
 
   if (!report) {
     const fallbackTitle = normalizedDomain
-      ? `SEO Audit of ${normalizedDomain} | AI Website Audit`
-      : "SEO Audit Report | AI Website Audit"
+      ? withBrandSuffix(`SEO Audit of ${normalizedDomain}`)
+      : withBrandSuffix("SEO Audit Report")
     const fallbackDescription =
       "No public audit is available for this domain yet. Run a free audit to get an instant SEO, UX, and conversion snapshot."
 
@@ -86,7 +87,7 @@ export async function generateMetadata({
     }
   }
 
-  const title = `SEO Audit of ${report.domainNormalized} | AI Website Audit`
+  const title = withBrandSuffix(`SEO Audit of ${report.domainNormalized}`)
   const description = `Public website audit preview for ${report.domainNormalized}. Review key SEO, UX, and conversion findings and run your own audit.`
 
   return {
@@ -104,7 +105,7 @@ export async function generateMetadata({
       title,
       description,
       url: canonicalPath,
-      siteName: "AI Website Audit",
+      siteName: BRAND_NAME,
     },
     twitter: {
       card: "summary_large_image",
@@ -176,7 +177,7 @@ export default async function PublicReportPage({ params }: PageParams) {
     )}`,
     about: {
       "@type": "SoftwareApplication",
-      name: "AI Website Audit",
+      name: BRAND_NAME,
       applicationCategory: "BusinessApplication",
     },
   }

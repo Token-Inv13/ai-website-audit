@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
+import { BRAND_NAME, withBrandSuffix } from "@/lib/branding"
 import { blogPosts, blogPostsBySlug } from "@/lib/blogPosts"
 
 interface PageParams {
@@ -22,13 +23,13 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
 
   if (!post) {
     return {
-      title: "Blog | AI Website Audit",
+      title: withBrandSuffix("Blog"),
       description: "SEO, UX and conversion optimization guides.",
     }
   }
 
   return {
-    title: `${post.title} | AI Website Audit Blog`,
+    title: `${post.title} | ${BRAND_NAME} Blog`,
     description: post.description,
     keywords: post.keywords,
     alternates: {
@@ -105,7 +106,7 @@ export default async function BlogPostPage({ params }: PageParams) {
               href="/"
               className="rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 px-5 py-3 text-sm font-semibold text-white transition hover:from-blue-700 hover:to-cyan-600"
             >
-              Run Your Website Audit
+              Run Your SEO Audit
             </Link>
             <Link
               href="/blog"

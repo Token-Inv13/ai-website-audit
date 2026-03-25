@@ -1,4 +1,4 @@
-# AI Website Audit
+# SEOAuditAI
 
 MVP Next.js qui analyse un site web depuis son URL et génère un audit SEO, conversion et UX via l'API OpenAI.
 

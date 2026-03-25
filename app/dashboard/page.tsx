@@ -1,5 +1,6 @@
 import Link from "next/link"
 
+import { BRAND_NAME } from "@/lib/branding"
 import { listRecentAudits } from "@/lib/auditStore"
 
 export const dynamic = "force-dynamic"
@@ -44,7 +45,7 @@ export default async function DashboardPage() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                AI Website Audit
+                {BRAND_NAME}
               </p>
               <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
                 Recent Audits

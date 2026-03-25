@@ -1,10 +1,11 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 
+import { BRAND_NAME, withBrandSuffix } from "@/lib/branding"
 import { blogPosts } from "@/lib/blogPosts"
 
 export const metadata: Metadata = {
-  title: "Website Audit Blog | SEO, UX and Conversion Guides",
+  title: withBrandSuffix("Website Audit Blog"),
   description:
     "Read practical guides about website audits, SEO checklists, UX improvements, and conversion optimization.",
   alternates: {
@@ -23,7 +24,7 @@ export default function BlogIndexPage() {
       <div className="mx-auto w-full max-w-5xl space-y-6">
         <section className="glass-card p-8 sm:p-10">
           <p className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
-            AI Website Audit Blog
+            {BRAND_NAME} Blog
           </p>
           <h1 className="mt-5 text-3xl font-bold tracking-tight text-slate-900 sm:text-5xl">
             SEO, UX and Conversion Guides

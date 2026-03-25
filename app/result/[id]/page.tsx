@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useParams, useSearchParams } from "next/navigation"
 
 import AuditReport from "@/components/AuditReport"
+import { BRAND_NAME, REPORT_LABEL } from "@/lib/branding"
 import { getApiErrorMessage, getErrorMessage } from "@/lib/error"
 import { getPublicAppUrl } from "@/lib/publicAppUrl"
 import type { AuditResult } from "@/types/audit"
@@ -343,8 +344,8 @@ export default function ResultPage() {
 
     try {
       await navigator.share({
-        title: "Website Audit Report",
-        text: "Check this website audit report.",
+        title: REPORT_LABEL,
+        text: `Check this report from ${BRAND_NAME}.`,
         url: shareUrl,
       })
       setShareFeedback("Report link shared.")
@@ -375,10 +376,10 @@ export default function ResultPage() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                AI Website Audit
+                {BRAND_NAME}
               </p>
               <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-                Website Audit Report
+                {REPORT_LABEL}
               </h1>
               <p className="mt-3 max-w-2xl text-sm text-slate-600 sm:text-base">
                 Prioritized improvements for SEO, conversion, and UX with clear execution guidance.

@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import ProgrammaticLandingPage from "@/components/ProgrammaticLandingPage"
+import { BRAND_NAME, withBrandSuffix } from "@/lib/branding"
 import { getToolIntentPageBySlug, toolIntentPages } from "@/lib/programmaticSeo"
 
 export const dynamicParams = false
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
 
   if (!page) {
     return {
-      title: "SEO Tools | AI Website Audit",
+      title: withBrandSuffix("SEO Tools"),
       description: "Analyze your website and get actionable SEO, UX, and conversion insights.",
       robots: {
         index: false,
@@ -42,7 +43,7 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
       title: page.metaTitle,
       description: page.metaDescription,
       url: `/tools/${page.slug}`,
-      siteName: "AI Website Audit",
+      siteName: BRAND_NAME,
     },
     twitter: {
       card: "summary_large_image",
