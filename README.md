@@ -60,7 +60,7 @@ MOCK_AI=true
 OPENAI_API_KEY=
 STRIPE_SECRET_KEY=your_stripe_secret_key
 STRIPE_PRICE_ID=price_xxx
-NEXT_PUBLIC_APP_URL=https://ai-website-audit-beta.vercel.app
+NEXT_PUBLIC_APP_URL=https://seoauditai.io
 ```
 
 ## Mode mock local (sans coût OpenAI)

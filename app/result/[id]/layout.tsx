@@ -13,6 +13,10 @@ export async function generateMetadata({ params }: LayoutParams): Promise<Metada
     alternates: {
       canonical: `/result/${id}`,
     },
+    robots: {
+      index: false,
+      follow: false,
+    },
   }
 }
 

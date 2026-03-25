@@ -6,6 +6,7 @@ import { useParams, useSearchParams } from "next/navigation"
 
 import AuditReport from "@/components/AuditReport"
 import { getApiErrorMessage, getErrorMessage } from "@/lib/error"
+import { getPublicAppUrl } from "@/lib/publicAppUrl"
 import type { AuditResult } from "@/types/audit"
 
 interface AuditApiResponse {
@@ -19,6 +20,8 @@ interface AuditApiResponse {
   publicPath: string | null
   canManageVisibility: boolean
 }
+
+const publicAppUrl = getPublicAppUrl()
 
 export default function ResultPage() {
   const params = useParams<{ id: string }>()
@@ -161,11 +164,7 @@ export default function ResultPage() {
     }
 
     const base =
-      process.env.NEXT_PUBLIC_APP_URL && process.env.NEXT_PUBLIC_APP_URL.trim()
-        ? process.env.NEXT_PUBLIC_APP_URL
-        : typeof window !== "undefined"
-          ? window.location.origin
-          : ""
+      publicAppUrl || (typeof window !== "undefined" ? window.location.origin : "")
 
     if (!base) {
       return null
@@ -267,10 +266,7 @@ export default function ResultPage() {
       return null
     }
 
-    const base =
-      process.env.NEXT_PUBLIC_APP_URL && process.env.NEXT_PUBLIC_APP_URL.trim()
-        ? process.env.NEXT_PUBLIC_APP_URL
-        : window.location.origin
+    const base = publicAppUrl || window.location.origin
 
     return `${base.replace(/\/$/, "")}/result/${id}`
   }
