@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="seoauditai-favicon-gradient" x1="32" y1="8" x2="32" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#0891B2"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="48" height="48" rx="16" fill="url(#seoauditai-favicon-gradient)"/>
+  <rect x="19" y="33" width="5" height="10" rx="2.5" fill="white"/>
+  <rect x="28" y="28" width="5" height="15" rx="2.5" fill="white"/>
+  <rect x="37" y="22" width="5" height="21" rx="2.5" fill="white"/>
+  <path d="M20 36L30.5 27L38 30L45 19.5" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="45" cy="19.5" r="3" fill="white"/>
+</svg>

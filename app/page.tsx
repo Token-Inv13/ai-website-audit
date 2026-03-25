@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 
+import BrandLogo from "@/components/BrandLogo"
 import UrlForm from "@/components/UrlForm"
 import { BRAND_NAME } from "@/lib/branding"
 
@@ -31,9 +32,12 @@ export default function HomePage() {
 
       <div className="mx-auto w-full max-w-6xl space-y-8 sm:space-y-10">
         <section className="glass-card p-8 sm:p-12">
-          <p className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
-            {BRAND_NAME}
-          </p>
+          <div className="inline-flex flex-col gap-3">
+            <BrandLogo />
+            <p className="inline-flex w-fit rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">
+              {BRAND_NAME}
+            </p>
+          </div>
           <h1 className="mt-5 max-w-3xl text-3xl font-bold tracking-tight text-slate-900 sm:text-5xl">
             Analyze your website and get actionable SEO, UX, and conversion insights in seconds.
           </h1>
