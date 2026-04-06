@@ -8,6 +8,10 @@ import { BRAND_NAME } from "@/lib/branding"
 import { buildKeywordClusters, type KeywordCluster } from "@/lib/workspaceKeywords"
 import { getApiErrorMessage, getErrorMessage } from "@/lib/error"
 import type {
+  AiContentResult,
+  CompetitionAnalysis,
+  CompetitionAction,
+  CompetitionSignal,
   IndexationInsight,
   QuickScanResult,
   RecentAuditSummary,
@@ -37,6 +41,16 @@ const tabs: Array<{
     key: "keywords",
     label: "Keywords",
     description: "Generate simple keyword ideas by search intent.",
+  },
+  {
+    key: "competition",
+    label: "Competition",
+    description: "Compare visible SEO signals against a rival page or keyword.",
+  },
+  {
+    key: "content",
+    label: "Content AI",
+    description: "Turn rough copy into better SEO-ready content assets.",
   },
 ]
 
@@ -89,6 +103,46 @@ function intentTone(intent: KeywordCluster["intent"]): string {
   }
 
   return "bg-slate-100 text-slate-700"
+}
+
+function signalTone(status: CompetitionSignal["status"]): string {
+  if (status === "good") {
+    return "bg-emerald-100 text-emerald-700"
+  }
+
+  if (status === "warning") {
+    return "bg-amber-100 text-amber-700"
+  }
+
+  return "bg-slate-100 text-slate-700"
+}
+
+function priorityTone(priority: CompetitionAction["priority"]): string {
+  if (priority === "High") {
+    return "bg-rose-100 text-rose-700"
+  }
+
+  if (priority === "Medium") {
+    return "bg-amber-100 text-amber-700"
+  }
+
+  return "bg-slate-100 text-slate-700"
+}
+
+function confidenceTone(value: CompetitionAnalysis["confidence"] | IndexationInsight["confidence"]): string {
+  if (value === "high") {
+    return "bg-emerald-100 text-emerald-700"
+  }
+
+  if (value === "medium") {
+    return "bg-amber-100 text-amber-700"
+  }
+
+  return "bg-slate-100 text-slate-700"
+}
+
+function modeLabel(mode: CompetitionAnalysis["mode"]): string {
+  return mode === "keyword" ? "Keyword mode" : "URL mode"
 }
 
 function ToolPill({ active }: { active: boolean }) {
@@ -465,6 +519,558 @@ function IndexationTab() {
   )
 }
 
+function CompetitionTab() {
+  const [target, setTarget] = useState("")
+  const [yourUrl, setYourUrl] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [result, setResult] = useState<CompetitionAnalysis | null>(null)
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError("")
+    setLoading(true)
+
+    try {
+      const response = await fetch("/api/workspace/competition", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          target,
+          yourUrl: yourUrl.trim() || undefined,
+        }),
+      })
+
+      const payload = (await response.json().catch(() => null)) as
+        | CompetitionAnalysis
+        | { error?: string }
+        | null
+
+      if (!response.ok) {
+        throw new Error(getApiErrorMessage(payload, "Competition analysis failed."))
+      }
+
+      if (!payload || !("mode" in payload)) {
+        throw new Error("Competition analysis failed.")
+      }
+
+      setResult(payload)
+    } catch (submitError) {
+      setError(getErrorMessage(submitError, "Competition analysis failed."))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.12fr)_minmax(320px,0.88fr)]">
+      <section className="soft-panel p-5 sm:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Competition V1
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+              Lightweight competitor signals
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Compare a live page or infer an opportunity from a keyword without any paid data
+              source.
+            </p>
+          </div>
+          <span className="rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-700">
+            Honest V1
+          </span>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="competition-target" className="block text-sm font-medium text-slate-700">
+              Competitor domain or keyword
+            </label>
+            <input
+              id="competition-target"
+              type="text"
+              placeholder="example.com or seo audit"
+              value={target}
+              onChange={(event) => setTarget(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.6)] outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="competition-your-url" className="block text-sm font-medium text-slate-700">
+              Your URL
+            </label>
+            <input
+              id="competition-your-url"
+              type="url"
+              placeholder="https://your-site.com/page"
+              value={yourUrl}
+              onChange={(event) => setYourUrl(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.6)] outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-xl bg-slate-900 px-5 py-3 font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading ? "Analyzing..." : "Analyze competition"}
+          </button>
+        </form>
+
+        {error ? (
+          <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </p>
+        ) : null}
+
+        {result ? (
+          <div className="mt-5 space-y-4">
+            <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm sm:p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    Result
+                  </p>
+                  <h3 className="mt-2 text-xl font-semibold text-slate-900">{result.summary}</h3>
+                  <p className="mt-2 text-sm text-slate-600">{result.opportunity}</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${confidenceTone(
+                      result.confidence,
+                    )}`}
+                  >
+                    {result.confidence === "high"
+                      ? "Fully verified"
+                      : result.confidence === "medium"
+                        ? "Mostly verified"
+                        : "Partially verified"}
+                  </span>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
+                    {modeLabel(result.mode)}
+                  </span>
+                </div>
+              </div>
+
+              <p className="mt-3 text-sm text-slate-600">
+                Input: <span className="font-medium text-slate-900">{result.input}</span>
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Your page
+                  </h4>
+                  <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-blue-700">
+                    {result.yourUrl ? "Live URL" : "Not provided"}
+                  </span>
+                </div>
+                <ul className="mt-4 space-y-3">
+                  {result.yourPageSignals.map((signal) => (
+                    <li
+                      key={`${signal.label}-${signal.value}`}
+                      className="rounded-xl border border-slate-200/70 bg-slate-50/80 p-3"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-medium text-slate-900">{signal.label}</span>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${signalTone(
+                            signal.status,
+                          )}`}
+                        >
+                          {signal.status}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm text-slate-600">{signal.value}</p>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+
+              <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Rival / keyword
+                  </h4>
+                  <span className="rounded-full bg-cyan-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-cyan-700">
+                    {result.focusKeyword ? "Keyword" : "Competitor page"}
+                  </span>
+                </div>
+                <ul className="mt-4 space-y-3">
+                  {result.competitorSignals.map((signal) => (
+                    <li
+                      key={`${signal.label}-${signal.value}`}
+                      className="rounded-xl border border-slate-200/70 bg-slate-50/80 p-3"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-medium text-slate-900">{signal.label}</span>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${signalTone(
+                            signal.status,
+                          )}`}
+                        >
+                          {signal.status}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm text-slate-600">{signal.value}</p>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm sm:p-5">
+              <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Simple comparisons
+              </h4>
+              <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                {result.comparisons.map((item) => (
+                  <li
+                    key={item}
+                    className="rounded-xl border border-slate-200/70 bg-slate-50/80 px-3 py-2"
+                  >
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm sm:p-5">
+              <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Opportunity actions
+              </h4>
+              <div className="mt-3 grid gap-3">
+                {result.actions.map((action) => (
+                  <article
+                    key={action.title}
+                    className="rounded-xl border border-slate-200/70 bg-slate-50/80 p-3"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <h5 className="text-sm font-semibold text-slate-900">{action.title}</h5>
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${priorityTone(
+                          action.priority,
+                        )}`}
+                      >
+                        {action.priority}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-slate-600">{action.description}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <aside className="space-y-6">
+        <div className="soft-panel p-5 sm:p-6">
+          <h3 className="text-lg font-semibold text-slate-900">What this V1 does</h3>
+          <ul className="mt-4 space-y-3 text-sm text-slate-600">
+            <li>Compares visible SEO signals from a live competitor page when a URL is available.</li>
+            <li>Maps a keyword opportunity when you only have the target query.</li>
+            <li>Keeps the output honest when a signal is estimated or only partially verified.</li>
+            <li>Highlights clear next moves instead of pretending to be a full competitor suite.</li>
+          </ul>
+        </div>
+
+        <div className="soft-panel p-5 sm:p-6">
+          <h3 className="text-lg font-semibold text-slate-900">Future path</h3>
+          <p className="mt-3 text-sm leading-relaxed text-slate-600">
+            This screen can later accept richer crawl or SERP data without changing the product
+            mental model or the workspace layout.
+          </p>
+        </div>
+      </aside>
+    </div>
+  )
+}
+
+function CopyButton({
+  value,
+  copied,
+  onCopy,
+}: {
+  value: string
+  copied: boolean
+  onCopy: (value: string) => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onCopy(value)}
+      className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+    >
+      {copied ? "Copied" : "Copy"}
+    </button>
+  )
+}
+
+function ContentTab() {
+  const [sourceText, setSourceText] = useState("")
+  const [focusKeyword, setFocusKeyword] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [result, setResult] = useState<AiContentResult | null>(null)
+  const [copied, setCopied] = useState<string | null>(null)
+
+  async function handleCopy(value: string) {
+    try {
+      await navigator.clipboard.writeText(value)
+      setCopied(value)
+      window.setTimeout(
+        () => setCopied((current) => (current === value ? null : current)),
+        1400,
+      )
+    } catch {
+      setCopied(null)
+    }
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError("")
+    setLoading(true)
+
+    try {
+      const response = await fetch("/api/workspace/content", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sourceText,
+          focusKeyword: focusKeyword.trim() || undefined,
+        }),
+      })
+
+      const payload = (await response.json().catch(() => null)) as
+        | AiContentResult
+        | { error?: string }
+        | null
+
+      if (!response.ok) {
+        throw new Error(getApiErrorMessage(payload, "Content improvement failed."))
+      }
+
+      if (!payload || !("metaTitle" in payload)) {
+        throw new Error("Content improvement failed.")
+      }
+
+      setResult(payload)
+    } catch (submitError) {
+      setError(getErrorMessage(submitError, "Content improvement failed."))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+      <section className="soft-panel p-5 sm:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Content AI V1
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+              Copyable SEO content improvements
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Paste rough copy, then get clearer title, description, headings, and a tighter
+              rewrite in one view.
+            </p>
+          </div>
+          <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-violet-700">
+            Fast AI
+          </span>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="content-source" className="block text-sm font-medium text-slate-700">
+              Source text
+            </label>
+            <textarea
+              id="content-source"
+              rows={8}
+              placeholder="Paste a page section, homepage draft, or rough landing page copy..."
+              value={sourceText}
+              onChange={(event) => setSourceText(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.6)] outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="content-keyword" className="block text-sm font-medium text-slate-700">
+              Focus keyword
+            </label>
+            <input
+              id="content-keyword"
+              type="text"
+              placeholder="seo audit, landing page, ai content..."
+              value={focusKeyword}
+              onChange={(event) => setFocusKeyword(event.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.6)] outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-xl bg-slate-900 px-5 py-3 font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading ? "Generating..." : "Generate content"}
+          </button>
+        </form>
+
+        {error ? (
+          <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </p>
+        ) : null}
+
+        {result ? (
+          <div className="mt-5 space-y-4">
+            <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm sm:p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    Output
+                  </p>
+                  <h3 className="mt-2 text-xl font-semibold text-slate-900">
+                    Ready-to-copy SEO assets
+                  </h3>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Turn one rough draft into clearer metadata, headings, and a better intro.
+                  </p>
+                </div>
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${confidenceTone(
+                    "high",
+                  )}`}
+                >
+                  Deterministic or AI assisted
+                </span>
+              </div>
+            </div>
+
+            <div className="grid gap-4">
+              <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Meta title
+                  </h4>
+                  <CopyButton value={result.metaTitle} copied={copied === result.metaTitle} onCopy={handleCopy} />
+                </div>
+                <p className="mt-3 text-sm text-slate-800">{result.metaTitle}</p>
+              </article>
+
+              <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Meta description
+                  </h4>
+                  <CopyButton
+                    value={result.metaDescription}
+                    copied={copied === result.metaDescription}
+                    onCopy={handleCopy}
+                  />
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-slate-700">{result.metaDescription}</p>
+              </article>
+
+              <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Suggested H1
+                  </h4>
+                  <CopyButton value={result.suggestedH1} copied={copied === result.suggestedH1} onCopy={handleCopy} />
+                </div>
+                <p className="mt-3 text-sm text-slate-700">{result.suggestedH1}</p>
+              </article>
+
+              <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm sm:p-5">
+                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  Suggested H2s
+                </h4>
+                <div className="mt-3 grid gap-3">
+                  {result.suggestedH2.map((item) => (
+                    <div
+                      key={item}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/70 bg-slate-50/80 p-3"
+                    >
+                      <p className="text-sm text-slate-700">{item}</p>
+                      <CopyButton value={item} copied={copied === item} onCopy={handleCopy} />
+                    </div>
+                  ))}
+                </div>
+              </article>
+
+              <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Rewrite
+                  </h4>
+                  <CopyButton value={result.rewrite} copied={copied === result.rewrite} onCopy={handleCopy} />
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-slate-700">{result.rewrite}</p>
+              </article>
+
+              <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm sm:p-5">
+                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  SEO tips
+                </h4>
+                <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                  {result.seoTips.map((tip) => (
+                    <li
+                      key={tip}
+                      className="rounded-xl border border-slate-200/70 bg-slate-50/80 px-3 py-2"
+                    >
+                      {tip}
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <aside className="space-y-6">
+        <div className="soft-panel p-5 sm:p-6">
+          <h3 className="text-lg font-semibold text-slate-900">How to use it</h3>
+          <ul className="mt-4 space-y-3 text-sm text-slate-600">
+            <li>Paste a rough draft or section from a page that needs improvement.</li>
+            <li>Add one focus keyword if you want the output anchored to a search term.</li>
+            <li>Copy only the cards you need and keep the editing loop fast.</li>
+            <li>Use the rewrite and H2s as a starting point, not a full content replacement.</li>
+          </ul>
+        </div>
+
+        <div className="soft-panel p-5 sm:p-6">
+          <h3 className="text-lg font-semibold text-slate-900">Why it stays lightweight</h3>
+          <p className="mt-3 text-sm leading-relaxed text-slate-600">
+            This V1 is designed to be immediately useful even without a heavy editor, so the
+            workspace keeps its quick, low-friction feel.
+          </p>
+        </div>
+      </aside>
+    </div>
+  )
+}
+
 function KeywordsTab() {
   const [keyword, setKeyword] = useState("")
   const [clusters, setClusters] = useState<KeywordCluster[]>([])
@@ -627,8 +1233,8 @@ export default function SeoWorkspace({ recentAudits }: SeoWorkspaceProps) {
                 A simple SEO hub built for fast work
               </h1>
               <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
-                Audit, Indexation, and Keywords live in one clear workspace so the product feels
-                like a hub instead of a single-purpose tool.
+                Audit, Indexation, Keywords, Competition, and Content live in one clear workspace
+                so the product feels like a hub instead of a single-purpose tool.
               </p>
             </div>
 
@@ -637,7 +1243,7 @@ export default function SeoWorkspace({ recentAudits }: SeoWorkspaceProps) {
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Tools live
                 </p>
-                <p className="mt-2 text-2xl font-bold text-slate-900">3</p>
+                <p className="mt-2 text-2xl font-bold text-slate-900">5</p>
               </div>
               <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -656,7 +1262,7 @@ export default function SeoWorkspace({ recentAudits }: SeoWorkspaceProps) {
             </div>
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-2">
+          <div className="mt-6 grid gap-2 md:grid-cols-2 xl:grid-cols-5">
             {tabs.map((tab) => {
               const active = tab.key === activeTab
 
@@ -694,6 +1300,8 @@ export default function SeoWorkspace({ recentAudits }: SeoWorkspaceProps) {
           {activeTab === "audit" ? <AuditTab recentAudits={recentAudits} /> : null}
           {activeTab === "indexation" ? <IndexationTab /> : null}
           {activeTab === "keywords" ? <KeywordsTab /> : null}
+          {activeTab === "competition" ? <CompetitionTab /> : null}
+          {activeTab === "content" ? <ContentTab /> : null}
         </section>
       </div>
     </main>

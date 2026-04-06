@@ -38,6 +38,46 @@ export interface SeoActionPlanItem {
   description: string
 }
 
+export interface CompetitionSignal {
+  label: string
+  value: string
+  status: "good" | "warning" | "neutral"
+}
+
+export interface CompetitionAction {
+  title: string
+  priority: SeoActionPriority
+  description: string
+}
+
+export type CompetitionMode = "url" | "keyword"
+
+export interface CompetitionAnalysis {
+  mode: CompetitionMode
+  input: string
+  yourUrl: string | null
+  competitorUrl: string | null
+  focusKeyword: string | null
+  confidence: IndexationConfidence
+  summary: string
+  opportunity: string
+  yourPageSignals: CompetitionSignal[]
+  competitorSignals: CompetitionSignal[]
+  comparisons: string[]
+  actions: CompetitionAction[]
+}
+
+export interface AiContentResult {
+  sourceText: string
+  focusKeyword: string
+  metaTitle: string
+  metaDescription: string
+  suggestedH1: string
+  suggestedH2: string[]
+  rewrite: string
+  seoTips: string[]
+}
+
 export interface AuditResult {
   overallScore: number
   seoScore: number
@@ -101,4 +141,4 @@ export interface QuickScanResult {
   }
 }
 
-export type WorkspaceTabKey = "audit" | "indexation" | "keywords"
+export type WorkspaceTabKey = "audit" | "indexation" | "keywords" | "competition" | "content"
