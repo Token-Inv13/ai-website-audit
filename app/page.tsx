@@ -39,14 +39,26 @@ export default function HomePage() {
             </p>
           </div>
           <h1 className="mt-5 max-w-3xl text-3xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-            Analyze your website and get actionable SEO, UX, and conversion insights in seconds.
+            Analyze your website and move through a simple SEO workspace built for fast audits.
           </h1>
           <p className="mt-4 max-w-2xl text-slate-600 sm:text-lg">
-            Run an instant audit, preview your main opportunities, and unlock the full action plan when needed.
+            Run an instant audit, open the workspace for indexation and keyword ideas, and unlock the full action plan when needed.
           </p>
 
           <div className="mt-8 soft-panel p-5 sm:p-6">
             <UrlForm />
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <a
+              href="/dashboard"
+              className="rounded-xl border border-slate-200 bg-white/80 px-4 py-2 text-sm font-semibold text-slate-700 backdrop-blur transition hover:bg-white"
+            >
+              Open SEO Workspace
+            </a>
+            <p className="text-sm text-slate-500">
+              Audit, Indexation, and Keywords in one simple product surface.
+            </p>
           </div>
         </section>
 

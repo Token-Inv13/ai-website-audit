@@ -1,6 +1,9 @@
 import * as cheerio from "cheerio"
+import type { CheerioAPI } from "cheerio"
 
 import type { QuickScanResult } from "@/types/audit"
+
+const QUICK_SCAN_TIMEOUT_MS = 8_000
 
 const REQUEST_HEADERS = {
   "User-Agent":
@@ -16,15 +19,48 @@ function isLengthInRange(length: number, min: number, max: number): boolean {
   return length >= min && length <= max
 }
 
-export async function runQuickSeoScan(url: string): Promise<QuickScanResult> {
-  const response = await fetch(url, {
-    headers: REQUEST_HEADERS,
-    redirect: "follow",
-  })
+function countMeaningfulElements($: CheerioAPI): number {
+  return $("main, article, section, header, footer, nav, p, h1, h2, h3, li, a, img").length
+}
 
-  if (!response.ok) {
-    throw new Error(`Unable to fetch website (${response.status})`)
+function getBodyTextLength($: CheerioAPI): number {
+  return normalizeText($("body").text()).length
+}
+
+function hasClientRenderSignals(html: string): boolean {
+  return (
+    html.includes("__NEXT_DATA__") ||
+    html.includes('id="__next"') ||
+    html.includes("data-reactroot") ||
+    html.includes("window.__NUXT__")
+  )
+}
+
+async function fetchWithTimeout(url: string): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), QUICK_SCAN_TIMEOUT_MS)
+
+  try {
+    return await fetch(url, {
+      headers: REQUEST_HEADERS,
+      redirect: "follow",
+      signal: controller.signal,
+    })
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error(
+        `Unable to fetch website (timeout after ${QUICK_SCAN_TIMEOUT_MS / 1000}s)`,
+      )
+    }
+
+    throw error
+  } finally {
+    clearTimeout(timeoutId)
   }
+}
+
+export async function runQuickSeoScan(url: string): Promise<QuickScanResult> {
+  const response = await fetchWithTimeout(url)
 
   const html = await response.text()
   const $ = cheerio.load(html)
@@ -35,6 +71,71 @@ export async function runQuickSeoScan(url: string): Promise<QuickScanResult> {
   const h1 = normalizeText($("h1").first().text())
   const canonical = normalizeText($("link[rel='canonical']").attr("href") ?? "")
   const robots = normalizeText($("meta[name='robots']").attr("content") ?? "")
+  const finalUrl = response.url || url
+  const bodyTextLength = getBodyTextLength($)
+  const meaningfulElementCount = countMeaningfulElements($)
+  const htmlIsSparse =
+    html.length < 1_800 ||
+    bodyTextLength < 120 ||
+    meaningfulElementCount < 6 ||
+    (hasClientRenderSignals(html) && bodyTextLength < 240)
+  const robotsDirectives = robots.toLowerCase().split(/[,;]/).flatMap((chunk) =>
+    chunk
+      .trim()
+      .split(/\s+/)
+      .map((item) => item.trim())
+      .filter(Boolean),
+  )
+  const noindexDetected =
+    robotsDirectives.includes("noindex") || robotsDirectives.includes("none")
+  const canonicalMatches = canonical
+    ? (() => {
+        try {
+          const canonicalUrl = new URL(canonical, finalUrl)
+          const normalizedCanonical = canonicalUrl.toString().replace(/\/+$/, "")
+          const normalizedFinal = new URL(finalUrl).toString().replace(/\/+$/, "")
+
+          return normalizedCanonical === normalizedFinal
+        } catch {
+          return false
+        }
+      })()
+    : false
+  const hasStrongSignals = Boolean(title && metaDescription && h1)
+  const verdict =
+    response.status >= 400 || noindexDetected
+      ? "potentially-blocked"
+      : htmlIsSparse || !hasStrongSignals || !canonical || !canonicalMatches
+        ? "needs-review"
+        : "indexable"
+
+  const confidence =
+    response.status >= 400 || noindexDetected
+      ? "medium"
+      : htmlIsSparse
+        ? "low"
+        : hasStrongSignals && canonical && canonicalMatches
+          ? "high"
+          : "medium"
+
+  const notes = [
+    response.status >= 400
+      ? `The page returned HTTP ${response.status}.`
+      : `The page returned HTTP ${response.status} and can be fetched successfully.`,
+    htmlIsSparse
+      ? "The HTML shell is sparse, so this result is only partially verified."
+      : `The page exposes ${bodyTextLength} visible characters and ${meaningfulElementCount} meaningful elements.`,
+    noindexDetected
+      ? "A noindex directive was detected in the robots meta tag."
+      : robots
+        ? `Robots meta tag detected: ${robots}.`
+        : "No robots meta tag was detected.",
+    canonical
+      ? canonicalMatches
+        ? "Canonical tag points to the current page."
+        : `Canonical tag points to ${canonical}.`
+      : "No canonical tag was detected.",
+  ]
 
   const checks: QuickScanResult["checks"] = {
     title: title
@@ -98,6 +199,27 @@ export async function runQuickSeoScan(url: string): Promise<QuickScanResult> {
   return {
     url,
     score,
+    indexation: {
+      statusCode: response.status,
+      finalUrl,
+      title,
+      robotsMeta: robots,
+      canonicalHref: canonical,
+      noindexDetected,
+      canonicalMatches,
+      htmlIsSparse,
+      confidence,
+      verdict,
+      summary:
+        verdict === "indexable"
+          ? "Fully verified: this page looks indexable."
+          : htmlIsSparse && response.status < 400
+            ? "Partially verified: the page may be indexable, but the HTML shell is too sparse to confirm."
+            : response.status >= 400
+              ? "The page returned an error response and may not be indexable."
+              : "The page is reachable, but something may still block indexing.",
+      notes,
+    },
     checks,
   }
 }

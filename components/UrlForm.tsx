@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 
 import { getApiErrorMessage, getErrorMessage } from "@/lib/error"
+import { buildSeoActionPlan } from "@/lib/workspacePlan"
 import type {
   QuickScanCheck,
   QuickScanResult,
@@ -36,6 +37,30 @@ function statusBadgeClasses(status: QuickScanStatus): string {
   return "bg-red-100 text-red-700"
 }
 
+function confidenceBadgeClasses(confidence: QuickScanResult["indexation"]["confidence"]): string {
+  if (confidence === "high") {
+    return "bg-emerald-100 text-emerald-700"
+  }
+
+  if (confidence === "medium") {
+    return "bg-amber-100 text-amber-700"
+  }
+
+  return "bg-slate-100 text-slate-700"
+}
+
+function priorityBadgeClasses(priority: string): string {
+  if (priority === "High") {
+    return "bg-red-100 text-red-700"
+  }
+
+  if (priority === "Medium") {
+    return "bg-amber-100 text-amber-700"
+  }
+
+  return "bg-slate-100 text-slate-700"
+}
+
 function normalizeUrlInput(raw: string): string {
   const trimmed = raw.trim()
   const withProtocol = /^https?:\/\//i.test(trimmed)
@@ -60,6 +85,7 @@ export default function UrlForm() {
   const [quickScanResult, setQuickScanResult] = useState<QuickScanResult | null>(
     null,
   )
+  const actionPlan = quickScanResult ? buildSeoActionPlan(quickScanResult) : []
 
   const isBusy = loading || quickScanLoading
 
@@ -213,12 +239,30 @@ export default function UrlForm() {
         <section className="rounded-2xl border border-slate-200/80 bg-white/85 p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-lg font-semibold text-slate-900">Quick Scan Results</h3>
-            <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
-              Score {quickScanResult.score}/100
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${confidenceBadgeClasses(quickScanResult.indexation.confidence)}`}>
+                {quickScanResult.indexation.confidence === "high"
+                  ? "Fully verified"
+                  : quickScanResult.indexation.confidence === "medium"
+                    ? "Mostly verified"
+                    : "Partially verified"}
+              </span>
+              <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
+                Score {quickScanResult.score}/100
+              </span>
+            </div>
           </div>
 
           <p className="mt-2 text-sm text-slate-600">{quickScanResult.url}</p>
+
+          <div className="mt-4 rounded-xl border border-slate-200/80 bg-slate-50/80 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              Indexation status
+            </p>
+            <p className="mt-2 text-sm font-medium text-slate-800">
+              {quickScanResult.indexation.summary}
+            </p>
+          </div>
 
           <ul className="mt-4 grid gap-2 sm:grid-cols-2">
             {quickScanLabels.map((item) => {
@@ -244,6 +288,43 @@ export default function UrlForm() {
               )
             })}
           </ul>
+
+          <div className="mt-5 rounded-2xl border border-slate-200/80 bg-white/90 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h4 className="text-base font-semibold text-slate-900">SEO Action Plan</h4>
+                <p className="mt-1 text-sm text-slate-600">
+                  Prioritized actions generated from the current scan signals.
+                </p>
+              </div>
+              <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
+                {actionPlan.length} actions
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-3">
+              {actionPlan.map((item) => (
+                <article
+                  key={item.title}
+                  className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-4"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h5 className="text-sm font-semibold text-slate-900">{item.title}</h5>
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${priorityBadgeClasses(
+                        item.priority,
+                      )}`}
+                    >
+                      {item.priority}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                    {item.description}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </div>
 
           <div className="mt-4 rounded-xl border border-blue-200/80 bg-blue-50/70 p-4">
             <p className="text-sm text-slate-700">

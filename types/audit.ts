@@ -11,6 +11,33 @@ export interface CopySuggestions {
   suggestedMetaDescription: string
 }
 
+export type IndexationVerdict = "indexable" | "potentially-blocked" | "needs-review"
+
+export type IndexationConfidence = "high" | "medium" | "low"
+
+export interface IndexationInsight {
+  statusCode: number
+  finalUrl: string
+  title: string
+  robotsMeta: string
+  canonicalHref: string
+  noindexDetected: boolean
+  canonicalMatches: boolean
+  htmlIsSparse: boolean
+  confidence: IndexationConfidence
+  verdict: IndexationVerdict
+  summary: string
+  notes: string[]
+}
+
+export type SeoActionPriority = "High" | "Medium" | "Low"
+
+export interface SeoActionPlanItem {
+  title: string
+  priority: SeoActionPriority
+  description: string
+}
+
 export interface AuditResult {
   overallScore: number
   seoScore: number
@@ -61,6 +88,7 @@ export interface QuickScanCheck {
 export interface QuickScanResult {
   url: string
   score: number
+  indexation: IndexationInsight
   checks: {
     title: QuickScanCheck
     metaDescription: QuickScanCheck
@@ -72,3 +100,5 @@ export interface QuickScanResult {
     metaDescriptionLength: QuickScanCheck
   }
 }
+
+export type WorkspaceTabKey = "audit" | "indexation" | "keywords"

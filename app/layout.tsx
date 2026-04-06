@@ -97,15 +97,15 @@ export default function RootLayout({
         <div className="pointer-events-none sticky top-0 z-30 px-4 pt-4">
           <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
             <div className="pointer-events-auto">
-              <BrandLogo priority />
-            </div>
-            <Link
-              href="/"
-              className="pointer-events-auto hidden rounded-full border border-white/60 bg-white/75 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-sky-700 shadow-[0_14px_36px_-24px_rgba(15,23,42,0.45)] backdrop-blur-md sm:inline-flex"
-            >
-              AI SEO, UX & Conversion
-            </Link>
+            <BrandLogo priority />
           </div>
+          <Link
+            href="/dashboard"
+            className="pointer-events-auto hidden rounded-full border border-white/60 bg-white/75 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-sky-700 shadow-[0_14px_36px_-24px_rgba(15,23,42,0.45)] backdrop-blur-md sm:inline-flex"
+          >
+            SEO Workspace
+          </Link>
+        </div>
         </div>
         <script
           type="application/ld+json"

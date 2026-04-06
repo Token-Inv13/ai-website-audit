@@ -54,6 +54,13 @@ export async function POST(request: Request) {
     }
 
     if (message.includes("Unable to fetch website")) {
+      if (message.toLowerCase().includes("timeout")) {
+        return NextResponse.json(
+          { error: "Website request timed out." },
+          { status: 504 },
+        )
+      }
+
       return NextResponse.json(
         { error: "Website is unreachable or blocked." },
         { status: 502 },
