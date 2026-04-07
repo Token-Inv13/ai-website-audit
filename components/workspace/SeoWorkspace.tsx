@@ -5,6 +5,19 @@ import { useState } from "react"
 
 import UrlForm from "@/components/UrlForm"
 import { BRAND_NAME } from "@/lib/branding"
+import {
+  PLAN_DESCRIPTIONS,
+  PLAN_LABELS,
+  PLAN_ORDER,
+  formatPlanLimit,
+  getPlanLimit,
+  hasAccess,
+  type Plan,
+} from "@/lib/plan"
+import {
+  createDefaultWorkspaceState,
+  type WorkspaceState,
+} from "@/lib/workspace"
 import { buildKeywordClusters, type KeywordCluster } from "@/lib/workspaceKeywords"
 import { getApiErrorMessage, getErrorMessage } from "@/lib/error"
 import type {
@@ -20,6 +33,11 @@ import type {
 
 interface SeoWorkspaceProps {
   recentAudits: RecentAuditSummary[]
+  workspaceState?: WorkspaceState
+}
+
+interface WorkspaceMutationResponse {
+  workspace: WorkspaceState
 }
 
 const tabs: Array<{
@@ -157,7 +175,132 @@ function ToolPill({ active }: { active: boolean }) {
   )
 }
 
-function AuditTab({ recentAudits }: { recentAudits: RecentAuditSummary[] }) {
+function PlanSwitcher({
+  plan,
+  onChange,
+}: {
+  plan: Plan
+  onChange: (plan: Plan) => void
+}) {
+  return (
+    <div className="grid gap-3 lg:grid-cols-3">
+      {PLAN_ORDER.map((item) => {
+        const active = item === plan
+        const audits = formatPlanLimit(getPlanLimit(item, "auditsPerDay"))
+        const keywordDepth = getPlanLimit(item, "keywordSuggestions")
+        const contentDepth = getPlanLimit(item, "contentCards")
+        const unlimitedAudits = hasAccess("unlimitedAudits", item)
+        const primaryAction =
+          item === plan ? "Selected" : item === "free" ? "Keep Free" : `Switch to ${PLAN_LABELS[item]}`
+
+        return (
+          <button
+            key={item}
+            type="button"
+            onClick={() => onChange(item)}
+            className={`rounded-2xl border p-4 text-left transition ${
+              active
+                ? "border-slate-900 bg-slate-900 text-white shadow-[0_18px_40px_-24px_rgba(15,23,42,0.75)]"
+                : "border-slate-200 bg-white/80 text-slate-700 hover:border-slate-300 hover:bg-white"
+            }`}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className={`text-sm font-semibold ${active ? "text-white" : "text-slate-900"}`}>
+                  {PLAN_LABELS[item]}
+                </p>
+                <p className={`mt-1 text-xs leading-relaxed ${active ? "text-slate-200" : "text-slate-500"}`}>
+                  {PLAN_DESCRIPTIONS[item]}
+                </p>
+              </div>
+              <span
+                className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
+                  active ? "bg-white text-slate-900" : "bg-slate-100 text-slate-600"
+                }`}
+              >
+                {item === "free" ? "Starter" : unlimitedAudits ? "Unlimited" : "Capped"}
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-2 text-xs font-semibold uppercase tracking-wide">
+              <div className={`rounded-xl px-3 py-2 ${active ? "bg-white/10 text-white" : "bg-slate-50 text-slate-700"}`}>
+                Audits/day: {audits}
+              </div>
+              <div className={`rounded-xl px-3 py-2 ${active ? "bg-white/10 text-white" : "bg-slate-50 text-slate-700"}`}>
+                Keyword depth: {keywordDepth}
+              </div>
+              <div className={`rounded-xl px-3 py-2 ${active ? "bg-white/10 text-white" : "bg-slate-50 text-slate-700"}`}>
+                Content blocks: {contentDepth}
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <span className={`text-sm font-semibold ${active ? "text-white" : "text-slate-900"}`}>
+                {primaryAction}
+              </span>
+              {item !== "pro" ? (
+                <span className={`text-xs ${active ? "text-slate-200" : "text-slate-500"}`}>
+                  {item === "free" ? "Preview paid depth" : "Almost there"}
+                </span>
+              ) : null}
+            </div>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function PremiumBadge() {
+  return (
+    <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
+      Premium
+    </span>
+  )
+}
+
+function LockedUpgradeCard({
+  title,
+  description,
+  upgradePlan,
+  onUpgrade,
+  ctaLabel = "Upgrade",
+}: {
+  title: string
+  description: string
+  upgradePlan: Plan
+  onUpgrade: (plan: Plan) => void
+  ctaLabel?: string
+}) {
+  return (
+    <article className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/80 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h4 className="text-sm font-semibold text-amber-900">{title}</h4>
+        <PremiumBadge />
+      </div>
+      <p className="mt-2 text-sm leading-relaxed text-amber-900/80">{description}</p>
+      <button
+        type="button"
+        onClick={() => onUpgrade(upgradePlan)}
+        className="mt-3 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700"
+      >
+        {ctaLabel}
+      </button>
+    </article>
+  )
+}
+
+function AuditTab({
+  recentAudits,
+  workspace,
+  onWorkspaceChange,
+  onUpgrade,
+}: {
+  recentAudits: RecentAuditSummary[]
+  workspace: WorkspaceState
+  onWorkspaceChange: (workspace: WorkspaceState) => void
+  onUpgrade: (plan: Plan) => void
+}) {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
       <section className="space-y-6">
@@ -181,7 +324,11 @@ function AuditTab({ recentAudits }: { recentAudits: RecentAuditSummary[] }) {
           </div>
 
           <div className="mt-5 rounded-2xl border border-slate-200/70 bg-white/85 p-4 sm:p-5">
-            <UrlForm />
+            <UrlForm
+              workspace={workspace}
+              onWorkspaceChange={onWorkspaceChange}
+              onUpgrade={onUpgrade}
+            />
           </div>
         </div>
 
@@ -519,12 +666,24 @@ function IndexationTab() {
   )
 }
 
-function CompetitionTab() {
+function CompetitionTab({
+  workspace,
+  onWorkspaceChange,
+  onUpgrade,
+}: {
+  workspace: WorkspaceState
+  onWorkspaceChange: (workspace: WorkspaceState) => void
+  onUpgrade: (plan: Plan) => void
+}) {
   const [target, setTarget] = useState("")
   const [yourUrl, setYourUrl] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [result, setResult] = useState<CompetitionAnalysis | null>(null)
+  const upgradePlan = workspace.nextPlan
+  const signalLimit = workspace.limits.competitionCards
+  const actionLimit = workspace.limits.actionPlanItems
+  const premiumLocked = workspace.plan !== "pro"
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -544,7 +703,7 @@ function CompetitionTab() {
       })
 
       const payload = (await response.json().catch(() => null)) as
-        | CompetitionAnalysis
+        | (CompetitionAnalysis & { workspace?: WorkspaceState })
         | { error?: string }
         | null
 
@@ -557,6 +716,9 @@ function CompetitionTab() {
       }
 
       setResult(payload)
+      if (payload.workspace) {
+        onWorkspaceChange(payload.workspace)
+      }
     } catch (submitError) {
       setError(getErrorMessage(submitError, "Competition analysis failed."))
     } finally {
@@ -580,9 +742,12 @@ function CompetitionTab() {
               source.
             </p>
           </div>
-          <span className="rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-700">
-            Honest V1
-          </span>
+          <div className="flex flex-col items-end gap-2">
+            <span className="rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-700">
+              Honest V1
+            </span>
+            {premiumLocked ? <PremiumBadge /> : null}
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
@@ -675,7 +840,7 @@ function CompetitionTab() {
                   </span>
                 </div>
                 <ul className="mt-4 space-y-3">
-                  {result.yourPageSignals.map((signal) => (
+                  {result.yourPageSignals.slice(0, signalLimit).map((signal) => (
                     <li
                       key={`${signal.label}-${signal.value}`}
                       className="rounded-xl border border-slate-200/70 bg-slate-50/80 p-3"
@@ -693,6 +858,16 @@ function CompetitionTab() {
                       <p className="mt-2 text-sm text-slate-600">{signal.value}</p>
                     </li>
                   ))}
+                  {result.yourPageSignals.length > signalLimit ? (
+                    <li>
+                      <LockedUpgradeCard
+                        title={`${result.yourPageSignals.length - signalLimit} more signals locked`}
+                        description={`Upgrade to ${PLAN_LABELS[upgradePlan]} to see the full page comparison and keep the competition view actionable.`}
+                        upgradePlan={upgradePlan}
+                        onUpgrade={onUpgrade}
+                      />
+                    </li>
+                  ) : null}
                 </ul>
               </article>
 
@@ -706,7 +881,7 @@ function CompetitionTab() {
                   </span>
                 </div>
                 <ul className="mt-4 space-y-3">
-                  {result.competitorSignals.map((signal) => (
+                  {result.competitorSignals.slice(0, signalLimit).map((signal) => (
                     <li
                       key={`${signal.label}-${signal.value}`}
                       className="rounded-xl border border-slate-200/70 bg-slate-50/80 p-3"
@@ -724,6 +899,16 @@ function CompetitionTab() {
                       <p className="mt-2 text-sm text-slate-600">{signal.value}</p>
                     </li>
                   ))}
+                  {result.competitorSignals.length > signalLimit ? (
+                    <li>
+                      <LockedUpgradeCard
+                        title={`${result.competitorSignals.length - signalLimit} more signals locked`}
+                        description={`Upgrade to ${PLAN_LABELS[upgradePlan]} to unlock the rest of the competitor detail and keep the analysis clearer.`}
+                        upgradePlan={upgradePlan}
+                        onUpgrade={onUpgrade}
+                      />
+                    </li>
+                  ) : null}
                 </ul>
               </article>
             </div>
@@ -733,7 +918,7 @@ function CompetitionTab() {
                 Simple comparisons
               </h4>
               <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                {result.comparisons.map((item) => (
+                {result.comparisons.slice(0, signalLimit).map((item) => (
                   <li
                     key={item}
                     className="rounded-xl border border-slate-200/70 bg-slate-50/80 px-3 py-2"
@@ -741,6 +926,23 @@ function CompetitionTab() {
                     {item}
                   </li>
                 ))}
+                {result.comparisons.length > signalLimit ? (
+                  <li className="rounded-xl border border-dashed border-amber-300 bg-amber-50/80 px-3 py-3 text-amber-900">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold">
+                        {result.comparisons.length - signalLimit} extra comparisons locked
+                      </p>
+                      <PremiumBadge />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onUpgrade(upgradePlan)}
+                      className="mt-3 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700"
+                    >
+                      Upgrade to {PLAN_LABELS[upgradePlan]}
+                    </button>
+                  </li>
+                ) : null}
               </ul>
             </div>
 
@@ -749,7 +951,7 @@ function CompetitionTab() {
                 Opportunity actions
               </h4>
               <div className="mt-3 grid gap-3">
-                {result.actions.map((action) => (
+                {result.actions.slice(0, actionLimit).map((action) => (
                   <article
                     key={action.title}
                     className="rounded-xl border border-slate-200/70 bg-slate-50/80 p-3"
@@ -767,6 +969,14 @@ function CompetitionTab() {
                     <p className="mt-2 text-sm text-slate-600">{action.description}</p>
                   </article>
                 ))}
+                {result.actions.length > actionLimit ? (
+                  <LockedUpgradeCard
+                    title={`${result.actions.length - actionLimit} more actions locked`}
+                    description={`Upgrade to ${PLAN_LABELS[upgradePlan]} to unlock the full competitive action list and keep the next steps sharp.`}
+                    upgradePlan={upgradePlan}
+                    onUpgrade={onUpgrade}
+                  />
+                ) : null}
               </div>
             </div>
           </div>
@@ -816,13 +1026,24 @@ function CopyButton({
   )
 }
 
-function ContentTab() {
+function ContentTab({
+  workspace,
+  onWorkspaceChange,
+  onUpgrade,
+}: {
+  workspace: WorkspaceState
+  onWorkspaceChange: (workspace: WorkspaceState) => void
+  onUpgrade: (plan: Plan) => void
+}) {
   const [sourceText, setSourceText] = useState("")
   const [focusKeyword, setFocusKeyword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [result, setResult] = useState<AiContentResult | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
+  const upgradePlan = workspace.nextPlan
+  const contentLimit = workspace.limits.contentCards
+  const premiumLocked = workspace.plan !== "pro"
 
   async function handleCopy(value: string) {
     try {
@@ -855,7 +1076,7 @@ function ContentTab() {
       })
 
       const payload = (await response.json().catch(() => null)) as
-        | AiContentResult
+        | (AiContentResult & { workspace?: WorkspaceState })
         | { error?: string }
         | null
 
@@ -868,6 +1089,9 @@ function ContentTab() {
       }
 
       setResult(payload)
+      if (payload.workspace) {
+        onWorkspaceChange(payload.workspace)
+      }
     } catch (submitError) {
       setError(getErrorMessage(submitError, "Content improvement failed."))
     } finally {
@@ -891,9 +1115,12 @@ function ContentTab() {
               rewrite in one view.
             </p>
           </div>
-          <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-violet-700">
-            Fast AI
-          </span>
+          <div className="flex flex-col items-end gap-2">
+            <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-violet-700">
+              Fast AI
+            </span>
+            {premiumLocked ? <PremiumBadge /> : null}
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
@@ -972,7 +1199,11 @@ function ContentTab() {
                   <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
                     Meta title
                   </h4>
-                  <CopyButton value={result.metaTitle} copied={copied === result.metaTitle} onCopy={handleCopy} />
+                  <CopyButton
+                    value={result.metaTitle}
+                    copied={copied === result.metaTitle}
+                    onCopy={handleCopy}
+                  />
                 </div>
                 <p className="mt-3 text-sm text-slate-800">{result.metaTitle}</p>
               </article>
@@ -988,61 +1219,111 @@ function ContentTab() {
                     onCopy={handleCopy}
                   />
                 </div>
-                <p className="mt-3 text-sm leading-relaxed text-slate-700">{result.metaDescription}</p>
+                <p className="mt-3 text-sm leading-relaxed text-slate-700">
+                  {result.metaDescription}
+                </p>
               </article>
 
-              <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm sm:p-5">
-                <div className="flex flex-wrap items-center justify-between gap-3">
+              {contentLimit > 2 ? (
+                <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm sm:p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Suggested H1
+                    </h4>
+                    <CopyButton
+                      value={result.suggestedH1}
+                      copied={copied === result.suggestedH1}
+                      onCopy={handleCopy}
+                    />
+                  </div>
+                  <p className="mt-3 text-sm text-slate-700">{result.suggestedH1}</p>
+                </article>
+              ) : (
+                <LockedUpgradeCard
+                  title="Suggested H1 locked"
+                  description={`Upgrade to ${PLAN_LABELS[upgradePlan]} to unlock the next AI edit and keep the content flow moving.`}
+                  upgradePlan={upgradePlan}
+                  onUpgrade={onUpgrade}
+                />
+              )}
+
+              {contentLimit > 3 ? (
+                <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm sm:p-5">
                   <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    Suggested H1
+                    Suggested H2s
                   </h4>
-                  <CopyButton value={result.suggestedH1} copied={copied === result.suggestedH1} onCopy={handleCopy} />
-                </div>
-                <p className="mt-3 text-sm text-slate-700">{result.suggestedH1}</p>
-              </article>
+                  <div className="mt-3 grid gap-3">
+                    {result.suggestedH2.map((item) => (
+                      <div
+                        key={item}
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/70 bg-slate-50/80 p-3"
+                      >
+                        <p className="text-sm text-slate-700">{item}</p>
+                        <CopyButton
+                          value={item}
+                          copied={copied === item}
+                          onCopy={handleCopy}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              ) : (
+                <LockedUpgradeCard
+                  title="Suggested H2s locked"
+                  description={`Upgrade to ${PLAN_LABELS[upgradePlan]} to unlock the supporting section ideas and make the draft easier to expand.`}
+                  upgradePlan={upgradePlan}
+                  onUpgrade={onUpgrade}
+                />
+              )}
 
-              <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm sm:p-5">
-                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  Suggested H2s
-                </h4>
-                <div className="mt-3 grid gap-3">
-                  {result.suggestedH2.map((item) => (
-                    <div
-                      key={item}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/70 bg-slate-50/80 p-3"
-                    >
-                      <p className="text-sm text-slate-700">{item}</p>
-                      <CopyButton value={item} copied={copied === item} onCopy={handleCopy} />
-                    </div>
-                  ))}
-                </div>
-              </article>
+              {contentLimit > 4 ? (
+                <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm sm:p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Rewrite
+                    </h4>
+                    <CopyButton
+                      value={result.rewrite}
+                      copied={copied === result.rewrite}
+                      onCopy={handleCopy}
+                    />
+                  </div>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-700">{result.rewrite}</p>
+                </article>
+              ) : (
+                <LockedUpgradeCard
+                  title="Rewrite locked"
+                  description={`Upgrade to ${PLAN_LABELS[upgradePlan]} to unlock the rewrite card and make the output copy-ready.`}
+                  upgradePlan={upgradePlan}
+                  onUpgrade={onUpgrade}
+                />
+              )}
 
-              <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm sm:p-5">
-                <div className="flex flex-wrap items-center justify-between gap-3">
+              {contentLimit > 5 ? (
+                <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm sm:p-5">
                   <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    Rewrite
+                    SEO tips
                   </h4>
-                  <CopyButton value={result.rewrite} copied={copied === result.rewrite} onCopy={handleCopy} />
-                </div>
-                <p className="mt-3 text-sm leading-relaxed text-slate-700">{result.rewrite}</p>
-              </article>
-
-              <article className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm sm:p-5">
-                <h4 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  SEO tips
-                </h4>
-                <ul className="mt-3 space-y-2 text-sm text-slate-700">
-                  {result.seoTips.map((tip) => (
-                    <li
-                      key={tip}
-                      className="rounded-xl border border-slate-200/70 bg-slate-50/80 px-3 py-2"
-                    >
-                      {tip}
-                    </li>
-                  ))}
-                </ul>
-              </article>
+                  <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                    {result.seoTips.map((tip) => (
+                      <li
+                        key={tip}
+                        className="rounded-xl border border-slate-200/70 bg-slate-50/80 px-3 py-2"
+                      >
+                        {tip}
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+              ) : (
+                <LockedUpgradeCard
+                  title="SEO tips locked"
+                  description={`Upgrade to ${PLAN_LABELS[upgradePlan]} to unlock the remaining AI guidance and finish the draft.`}
+                  upgradePlan={upgradePlan}
+                  onUpgrade={onUpgrade}
+                />
+              )}
             </div>
           </div>
         ) : null}
@@ -1071,10 +1352,23 @@ function ContentTab() {
   )
 }
 
-function KeywordsTab() {
+function KeywordsTab({
+  workspace,
+  onWorkspaceChange,
+  onUpgrade,
+}: {
+  workspace: WorkspaceState
+  onWorkspaceChange: (workspace: WorkspaceState) => void
+  onUpgrade: (plan: Plan) => void
+}) {
   const [keyword, setKeyword] = useState("")
   const [clusters, setClusters] = useState<KeywordCluster[]>([])
   const [copied, setCopied] = useState<string | null>(null)
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+  const upgradePlan = workspace.nextPlan
+  const visibleSuggestions = workspace.limits.keywordSuggestions
+  const premiumLocked = workspace.plan !== "pro"
 
   async function handleCopy(value: string) {
     try {
@@ -1089,9 +1383,40 @@ function KeywordsTab() {
     }
   }
 
-  function handleGenerate(event: React.FormEvent<HTMLFormElement>) {
+  async function handleGenerate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setClusters(buildKeywordClusters(keyword))
+    setError("")
+    setLoading(true)
+
+    try {
+      const response = await fetch("/api/workspace/keywords", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          keyword,
+        }),
+      })
+
+      const payload = (await response.json().catch(() => null)) as
+        | { workspace?: WorkspaceState; error?: string }
+        | null
+
+      if (!response.ok) {
+        throw new Error(getApiErrorMessage(payload, "Keyword generation failed."))
+      }
+
+      setClusters(buildKeywordClusters(keyword))
+
+      if (payload?.workspace) {
+        onWorkspaceChange(payload.workspace)
+      }
+    } catch (generateError) {
+      setError(getErrorMessage(generateError, "Keyword generation failed."))
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -1109,9 +1434,12 @@ function KeywordsTab() {
               No paid keyword source here, just a lightweight generator for usable variations.
             </p>
           </div>
-          <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-violet-700">
-            Local suggestions
-          </span>
+          <div className="flex flex-col items-end gap-2">
+            <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-violet-700">
+              Local suggestions
+            </span>
+            {premiumLocked ? <PremiumBadge /> : null}
+          </div>
         </div>
 
         <form onSubmit={handleGenerate} className="mt-5 space-y-3">
@@ -1130,12 +1458,19 @@ function KeywordsTab() {
             />
             <button
               type="submit"
-              className="rounded-xl bg-slate-900 px-5 py-3 font-semibold text-white transition hover:bg-slate-800"
+              disabled={loading}
+              className="rounded-xl bg-slate-900 px-5 py-3 font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Generate ideas
+              {loading ? "Generating..." : "Generate ideas"}
             </button>
           </div>
         </form>
+
+        {error ? (
+          <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </p>
+        ) : null}
 
         <div className="mt-5 grid gap-4">
           {clusters.length === 0 ? (
@@ -1166,7 +1501,7 @@ function KeywordsTab() {
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {cluster.suggestions.map((suggestion) => (
+                  {cluster.suggestions.slice(0, visibleSuggestions).map((suggestion) => (
                     <button
                       key={suggestion.value}
                       type="button"
@@ -1182,6 +1517,25 @@ function KeywordsTab() {
                       </span>
                     </button>
                   ))}
+                  {cluster.suggestions.length > visibleSuggestions ? (
+                    <>
+                      {cluster.suggestions.slice(visibleSuggestions).map((suggestion) => (
+                        <span
+                          key={`${suggestion.value}-locked`}
+                          className="inline-flex items-center gap-2 rounded-full border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900 opacity-75 blur-[0.4px]"
+                        >
+                          {suggestion.value}
+                        </span>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => onUpgrade(upgradePlan)}
+                        className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-100 px-3 py-2 text-left text-sm font-semibold text-amber-900 transition hover:bg-amber-200"
+                      >
+                        Unlock {cluster.suggestions.length - visibleSuggestions} more
+                      </button>
+                    </>
+                  ) : null}
                 </div>
               </article>
             ))
@@ -1211,8 +1565,47 @@ function KeywordsTab() {
   )
 }
 
-export default function SeoWorkspace({ recentAudits }: SeoWorkspaceProps) {
+export default function SeoWorkspace({
+  recentAudits,
+  workspaceState,
+}: SeoWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<WorkspaceTabKey>("audit")
+  const [workspace, setWorkspace] = useState<WorkspaceState>(
+    workspaceState ?? createDefaultWorkspaceState(),
+  )
+
+  async function handleUpgrade(targetPlan: Plan) {
+    if (targetPlan === workspace.plan) {
+      return
+    }
+
+    try {
+      const response = await fetch("/api/workspace/plan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ plan: targetPlan }),
+      })
+
+      const payload = (await response.json().catch(() => null)) as
+        | WorkspaceMutationResponse
+        | { error?: string }
+        | null
+
+      if (!response.ok) {
+        throw new Error(getApiErrorMessage(payload, "Plan update failed."))
+      }
+
+      if (!payload || !("workspace" in payload)) {
+        throw new Error("Plan update failed.")
+      }
+
+      setWorkspace(payload.workspace)
+    } catch (error) {
+      console.error("Workspace plan update failed:", error)
+    }
+  }
 
   return (
     <main className="relative min-h-screen overflow-hidden px-4 py-10 sm:py-14">
@@ -1262,6 +1655,64 @@ export default function SeoWorkspace({ recentAudits }: SeoWorkspaceProps) {
             </div>
           </div>
 
+          <div className="mt-6 rounded-3xl border border-slate-200/80 bg-white/70 p-4 sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  Plan preview
+                </p>
+                <h2 className="mt-2 text-xl font-semibold text-slate-900">
+                  Free, Basic, and Pro are now visible in the workspace
+                </h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  Upgrade prompts stay soft: users can still explore, but locked depth is clearly
+                  signaled and easy to unlock.
+                </p>
+              </div>
+              <div className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
+                Current: {PLAN_LABELS[workspace.plan]}
+              </div>
+            </div>
+            <div className="mt-4">
+              <PlanSwitcher plan={workspace.plan} onChange={(nextPlan) => void handleUpgrade(nextPlan)} />
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Audits left
+                </p>
+                <p className="mt-2 text-2xl font-bold text-slate-900">
+                  {workspace.remaining.audits}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {workspace.usage.auditsUsed}/{workspace.limits.auditsPerDay} today
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Keywords left
+                </p>
+                <p className="mt-2 text-2xl font-bold text-slate-900">
+                  {workspace.remaining.keywords}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {workspace.usage.keywordsUsed}/{workspace.limits.keywordSuggestions} today
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  AI / Competition
+                </p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">
+                  Content {workspace.remaining.content} left, Competition {workspace.remaining.competition} left
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Plan: {PLAN_LABELS[workspace.plan]} with persistent usage.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="mt-6 grid gap-2 md:grid-cols-2 xl:grid-cols-5">
             {tabs.map((tab) => {
               const active = tab.key === activeTab
@@ -1297,11 +1748,36 @@ export default function SeoWorkspace({ recentAudits }: SeoWorkspaceProps) {
         </header>
 
         <section className="space-y-6">
-          {activeTab === "audit" ? <AuditTab recentAudits={recentAudits} /> : null}
+          {activeTab === "audit" ? (
+            <AuditTab
+              recentAudits={recentAudits}
+              workspace={workspace}
+              onWorkspaceChange={setWorkspace}
+              onUpgrade={handleUpgrade}
+            />
+          ) : null}
           {activeTab === "indexation" ? <IndexationTab /> : null}
-          {activeTab === "keywords" ? <KeywordsTab /> : null}
-          {activeTab === "competition" ? <CompetitionTab /> : null}
-          {activeTab === "content" ? <ContentTab /> : null}
+          {activeTab === "keywords" ? (
+            <KeywordsTab
+              workspace={workspace}
+              onWorkspaceChange={setWorkspace}
+              onUpgrade={handleUpgrade}
+            />
+          ) : null}
+          {activeTab === "competition" ? (
+            <CompetitionTab
+              workspace={workspace}
+              onWorkspaceChange={setWorkspace}
+              onUpgrade={handleUpgrade}
+            />
+          ) : null}
+          {activeTab === "content" ? (
+            <ContentTab
+              workspace={workspace}
+              onWorkspaceChange={setWorkspace}
+              onUpgrade={handleUpgrade}
+            />
+          ) : null}
         </section>
       </div>
     </main>

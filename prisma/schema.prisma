@@ -7,6 +7,37 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model WorkspaceProfile {
+  visitorId           String           @id
+  plan                String           @default("free")
+  stripeCustomerId    String?
+  stripeSubscriptionId String?
+  billingStatus       String?
+  currentPeriodEnd    DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  usages              WorkspaceUsage[]
+
+  @@index([plan])
+  @@index([stripeCustomerId])
+  @@index([stripeSubscriptionId])
+}
+
+model WorkspaceUsage {
+  visitorId      String
+  periodKey      String
+  auditsUsed     Int      @default(0)
+  keywordsUsed   Int      @default(0)
+  competitionUsed Int     @default(0)
+  contentUsed    Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  profile        WorkspaceProfile @relation(fields: [visitorId], references: [visitorId], onDelete: Cascade)
+
+  @@id([visitorId, periodKey])
+  @@index([periodKey])
+}
+
 model Audit {
   id              String   @id
   manageToken     String?

@@ -2,6 +2,12 @@ import { NextResponse } from "next/server"
 
 import { getErrorMessage } from "@/lib/error"
 import { analyzeCompetition } from "@/lib/workspaceCompetition"
+import {
+  consumeWorkspaceUsage,
+  createWorkspaceVisitorId,
+  resolveWorkspaceVisitorId,
+  applyWorkspaceVisitorCookie,
+} from "@/lib/workspaceServer"
 
 interface CompetitionRequestBody {
   target?: string
@@ -21,12 +27,46 @@ export async function POST(request: Request) {
       )
     }
 
+    const visitorId = resolveWorkspaceVisitorId(request.headers) ?? createWorkspaceVisitorId()
+    const gate = await consumeWorkspaceUsage(visitorId, "competition")
+
+    if (!gate.allowed) {
+      const response = NextResponse.json(
+        {
+          error: `Competition analysis limit reached. Upgrade to ${
+            gate.upgradeTarget === "basic" ? "Basic" : "Pro"
+          } to keep comparing pages.`,
+          upgradeTo: gate.upgradeTarget,
+          workspace: gate.state,
+        },
+        { status: 429 },
+      )
+
+      applyWorkspaceVisitorCookie(response, visitorId)
+      return response
+    }
+
     const result = await analyzeCompetition({
       target: body.target,
       yourUrl: body.yourUrl,
     })
+    const signalLimit = gate.state.limits.competitionCards
+    const actionLimit = gate.state.limits.actionPlanItems
 
-    return NextResponse.json(result, { status: 200 })
+    const response = NextResponse.json(
+      {
+        ...result,
+        yourPageSignals: result.yourPageSignals.slice(0, signalLimit),
+        competitorSignals: result.competitorSignals.slice(0, signalLimit),
+        comparisons: result.comparisons.slice(0, signalLimit),
+        actions: result.actions.slice(0, actionLimit),
+        workspace: gate.state,
+      },
+      { status: 200 },
+    )
+
+    applyWorkspaceVisitorCookie(response, visitorId)
+    return response
   } catch (error) {
     const message = getErrorMessage(error, "Internal server error")
     console.error("POST /api/workspace/competition failed:", {

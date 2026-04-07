@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { getErrorMessage } from "@/lib/error"
-import { improveContent } from "@/lib/workspaceContent"
+import { buildKeywordClusters } from "@/lib/workspaceKeywords"
 import {
   consumeWorkspaceUsage,
   createWorkspaceVisitorId,
@@ -9,33 +9,33 @@ import {
   applyWorkspaceVisitorCookie,
 } from "@/lib/workspaceServer"
 
-interface ContentRequestBody {
-  sourceText?: string
-  focusKeyword?: string
+interface KeywordsRequestBody {
+  keyword?: string
 }
 
 export const runtime = "nodejs"
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as ContentRequestBody
+    const body = (await request.json()) as KeywordsRequestBody
+    const keyword = body.keyword?.trim()
 
-    if (!body.sourceText?.trim()) {
+    if (!keyword) {
       return NextResponse.json(
-        { error: "Please paste some text first." },
+        { error: "Please enter a seed keyword." },
         { status: 400 },
       )
     }
 
     const visitorId = resolveWorkspaceVisitorId(request.headers) ?? createWorkspaceVisitorId()
-    const gate = await consumeWorkspaceUsage(visitorId, "content")
+    const gate = await consumeWorkspaceUsage(visitorId, "keywords")
 
     if (!gate.allowed) {
       const response = NextResponse.json(
         {
-          error: `Content AI limit reached. Upgrade to ${
+          error: `Keyword generation limit reached. Upgrade to ${
             gate.upgradeTarget === "basic" ? "Basic" : "Pro"
-          } to keep generating content.`,
+          } to keep generating ideas.`,
           upgradeTo: gate.upgradeTarget,
           workspace: gate.state,
         },
@@ -46,19 +46,15 @@ export async function POST(request: Request) {
       return response
     }
 
-    const result = await improveContent({
-      sourceText: body.sourceText,
-      focusKeyword: body.focusKeyword,
-    })
-    const contentLimit = gate.state.limits.contentCards
+    const visibleSuggestions = gate.state.limits.keywordSuggestions
+    const clusters = buildKeywordClusters(keyword).map((cluster) => ({
+      ...cluster,
+      suggestions: cluster.suggestions.slice(0, visibleSuggestions),
+    }))
 
     const response = NextResponse.json(
       {
-        ...result,
-        suggestedH1: contentLimit > 2 ? result.suggestedH1 : "",
-        suggestedH2: contentLimit > 3 ? result.suggestedH2 : [],
-        rewrite: contentLimit > 4 ? result.rewrite : "",
-        seoTips: contentLimit > 5 ? result.seoTips : [],
+        clusters,
         workspace: gate.state,
       },
       { status: 200 },
@@ -68,20 +64,20 @@ export async function POST(request: Request) {
     return response
   } catch (error) {
     const message = getErrorMessage(error, "Internal server error")
-    console.error("POST /api/workspace/content failed:", {
+    console.error("POST /api/workspace/keywords failed:", {
       message,
       error,
     })
 
-    if (message.toLowerCase().includes("paste some text")) {
+    if (message.toLowerCase().includes("seed keyword")) {
       return NextResponse.json(
-        { error: "Please paste some text first." },
+        { error: "Please enter a seed keyword." },
         { status: 400 },
       )
     }
 
     return NextResponse.json(
-      { error: "Content improvement failed." },
+      { error: "Keyword generation failed." },
       { status: 500 },
     )
   }

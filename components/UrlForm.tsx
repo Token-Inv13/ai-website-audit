@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 
 import { getApiErrorMessage, getErrorMessage } from "@/lib/error"
 import { buildSeoActionPlan } from "@/lib/workspacePlan"
+import { formatPlanLimit, getNextPlan, type Plan } from "@/lib/plan"
+import type { WorkspaceState } from "@/lib/workspace"
 import type {
   QuickScanCheck,
   QuickScanResult,
@@ -76,7 +78,17 @@ function normalizeUrlInput(raw: string): string {
   return parsed.toString()
 }
 
-export default function UrlForm() {
+interface UrlFormProps {
+  workspace: WorkspaceState
+  onWorkspaceChange: (workspace: WorkspaceState) => void
+  onUpgrade?: (plan: Plan) => void
+}
+
+export default function UrlForm({
+  workspace,
+  onWorkspaceChange,
+  onUpgrade,
+}: UrlFormProps) {
   const router = useRouter()
   const [url, setUrl] = useState("")
   const [loading, setLoading] = useState(false)
@@ -86,10 +98,22 @@ export default function UrlForm() {
     null,
   )
   const actionPlan = quickScanResult ? buildSeoActionPlan(quickScanResult) : []
+  const actionPlanLimit = workspace.limits.actionPlanItems
+  const visibleActionPlan = actionPlan.slice(0, actionPlanLimit)
+  const hiddenActionPlan = actionPlan.slice(actionPlanLimit)
+  const auditLimit = workspace.limits.auditsPerDay
+  const auditLimitReached = workspace.remaining.audits <= 0
+  const upgradePlan = getNextPlan(workspace.plan)
 
   const isBusy = loading || quickScanLoading
 
   async function runFullAudit(normalizedUrl: string) {
+    if (auditLimitReached) {
+      throw new Error(
+        `Free plan limit reached. Upgrade to ${upgradePlan === "basic" ? "Basic" : "Pro"} to keep running full audits.`,
+      )
+    }
+
     setLoading(true)
 
     try {
@@ -103,7 +127,9 @@ export default function UrlForm() {
 
       const payload = (await response
         .json()
-        .catch(() => null)) as { id?: string } | null
+        .catch(() => null)) as
+        | { id?: string; workspace?: WorkspaceState; error?: string }
+        | null
 
       if (!response.ok) {
         throw new Error(getApiErrorMessage(payload, "Unable to run audit."))
@@ -113,6 +139,21 @@ export default function UrlForm() {
         throw new Error("Unable to run audit.")
       }
 
+      if (payload?.workspace) {
+        onWorkspaceChange(payload.workspace)
+      } else {
+        onWorkspaceChange({
+          ...workspace,
+          usage: {
+            ...workspace.usage,
+            auditsUsed: workspace.usage.auditsUsed + 1,
+          },
+          remaining: {
+            ...workspace.remaining,
+            audits: Math.max(workspace.remaining.audits - 1, 0),
+          },
+        })
+      }
       router.push(`/result/${payload.id}`)
     } finally {
       setLoading(false)
@@ -202,6 +243,19 @@ export default function UrlForm() {
         <label htmlFor="website-url" className="block text-sm font-medium text-slate-700">
           Website URL
         </label>
+        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <span className="rounded-full bg-slate-900 px-2.5 py-1 text-white">
+            {workspace.plan.toUpperCase()} plan
+          </span>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
+            {workspace.usage.auditsUsed}/{formatPlanLimit(auditLimit)} audits today
+          </span>
+          {auditLimitReached ? (
+            <span className="rounded-full bg-amber-100 px-2.5 py-1 text-amber-700">
+              Limit reached
+            </span>
+          ) : null}
+        </div>
         <div className="relative">
           <input
             id="website-url"
@@ -220,7 +274,11 @@ export default function UrlForm() {
             disabled={isBusy}
             className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-3.5 font-semibold text-white shadow-[0_16px_35px_-18px_rgba(37,99,235,0.75)] transition hover:from-blue-700 hover:to-cyan-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? "Analyzing..." : "Analyze Website"}
+            {loading
+              ? "Analyzing..."
+              : auditLimitReached
+                ? `Upgrade to ${upgradePlan === "basic" ? "Basic" : "Pro"}`
+                : "Analyze Website"}
           </button>
           <button
             type="button"
@@ -241,8 +299,8 @@ export default function UrlForm() {
             <h3 className="text-lg font-semibold text-slate-900">Quick Scan Results</h3>
             <div className="flex flex-wrap items-center gap-2">
               <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${confidenceBadgeClasses(quickScanResult.indexation.confidence)}`}>
-                {quickScanResult.indexation.confidence === "high"
-                  ? "Fully verified"
+            {quickScanResult.indexation.confidence === "high"
+              ? "Fully verified"
                   : quickScanResult.indexation.confidence === "medium"
                     ? "Mostly verified"
                     : "Partially verified"}
@@ -289,57 +347,91 @@ export default function UrlForm() {
             })}
           </ul>
 
-          <div className="mt-5 rounded-2xl border border-slate-200/80 bg-white/90 p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h4 className="text-base font-semibold text-slate-900">SEO Action Plan</h4>
-                <p className="mt-1 text-sm text-slate-600">
-                  Prioritized actions generated from the current scan signals.
-                </p>
-              </div>
-              <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
-                {actionPlan.length} actions
-              </span>
-            </div>
-
-            <div className="mt-4 grid gap-3">
-              {actionPlan.map((item) => (
-                <article
-                  key={item.title}
-                  className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-4"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h5 className="text-sm font-semibold text-slate-900">{item.title}</h5>
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${priorityBadgeClasses(
-                        item.priority,
-                      )}`}
-                    >
-                      {item.priority}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                    {item.description}
+            <div className="mt-5 rounded-2xl border border-slate-200/80 bg-white/90 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-base font-semibold text-slate-900">SEO Action Plan</h4>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Prioritized actions generated from the current scan signals.
                   </p>
-                </article>
-              ))}
-            </div>
-          </div>
+                </div>
+                <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
+                  {visibleActionPlan.length}/{actionPlan.length} visible
+                </span>
+              </div>
 
-          <div className="mt-4 rounded-xl border border-blue-200/80 bg-blue-50/70 p-4">
-            <p className="text-sm text-slate-700">
-              Want deeper analysis and actionable recommendations?
-            </p>
-            <button
-              type="button"
-              onClick={handleRunFullAuditFromScan}
-              disabled={isBusy}
-              className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Run Full Audit
-            </button>
-          </div>
-        </section>
+              <div className="mt-4 grid gap-3">
+                {visibleActionPlan.map((item) => (
+                  <article
+                    key={item.title}
+                    className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-4"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h5 className="text-sm font-semibold text-slate-900">{item.title}</h5>
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${priorityBadgeClasses(
+                          item.priority,
+                        )}`}
+                      >
+                        {item.priority}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                      {item.description}
+                    </p>
+                  </article>
+                ))}
+                {hiddenActionPlan.length > 0 ? (
+                  <article className="rounded-xl border border-dashed border-amber-300 bg-amber-50/80 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h5 className="text-sm font-semibold text-amber-900">
+                        {hiddenActionPlan.length} premium actions locked
+                      </h5>
+                      <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700">
+                        Premium
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm leading-relaxed text-amber-900/80">
+                      Upgrade to {upgradePlan === "basic" ? "Basic" : "Pro"} to reveal the rest of
+                      the action plan and keep the momentum going.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => onUpgrade?.(upgradePlan)}
+                      className="mt-3 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700"
+                    >
+                      Upgrade
+                    </button>
+                  </article>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-blue-200/80 bg-blue-50/70 p-4">
+              <p className="text-sm text-slate-700">
+                Want deeper analysis and actionable recommendations?
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleRunFullAuditFromScan}
+                  disabled={isBusy}
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {auditLimitReached ? `Upgrade to ${upgradePlan === "basic" ? "Basic" : "Pro"}` : "Run Full Audit"}
+                </button>
+                {auditLimitReached ? (
+                  <button
+                    type="button"
+                    onClick={() => onUpgrade?.(upgradePlan)}
+                    className="rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
+                  >
+                    Upgrade plan
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </section>
       ) : null}
     </div>
   )

@@ -8,6 +8,12 @@ import { analyzeWebsite } from "@/lib/analyze"
 import { createAudit } from "@/lib/auditStore"
 import { getErrorMessage } from "@/lib/error"
 import { scrapeWebsite } from "@/lib/scrape"
+import {
+  consumeWorkspaceUsage,
+  createWorkspaceVisitorId,
+  resolveWorkspaceVisitorId,
+  applyWorkspaceVisitorCookie,
+} from "@/lib/workspaceServer"
 
 interface AuditRequestBody {
   url?: string
@@ -61,6 +67,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid URL provided." }, { status: 400 })
     }
 
+    const visitorId = resolveWorkspaceVisitorId(request.headers) ?? createWorkspaceVisitorId()
+    const gate = await consumeWorkspaceUsage(visitorId, "audit")
+
+    if (!gate.allowed) {
+      const response = NextResponse.json(
+        {
+          error: `Daily audit limit reached. Upgrade to ${
+            gate.upgradeTarget === "basic" ? "Basic" : "Pro"
+          } to keep running full audits.`,
+          upgradeTo: gate.upgradeTarget,
+          workspace: gate.state,
+        },
+        { status: 429 },
+      )
+
+      applyWorkspaceVisitorCookie(response, visitorId)
+      return response
+    }
+
     const scrapedData = await scrapeWebsite(url)
     const result = await analyzeWebsite(scrapedData)
 
@@ -75,7 +100,13 @@ export async function POST(request: Request) {
       auditId: id,
     })
 
-    const response = NextResponse.json({ id }, { status: 200 })
+    const response = NextResponse.json(
+      {
+        id,
+        workspace: gate.state,
+      },
+      { status: 200 },
+    )
 
     if (createdAudit.manageToken) {
       response.cookies.set({
@@ -88,6 +119,8 @@ export async function POST(request: Request) {
         maxAge: 60 * 60 * 24 * 365,
       })
     }
+
+    applyWorkspaceVisitorCookie(response, visitorId)
 
     return response
   } catch (error) {
