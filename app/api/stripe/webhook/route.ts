@@ -6,6 +6,7 @@ import {
   getStripeWebhookSecret,
   unlockAuditFromCheckoutSession,
 } from "@/lib/stripe"
+import { syncWorkspacePlanFromSubscription } from "@/lib/workspaceServer"
 
 export const runtime = "nodejs"
 
@@ -17,6 +18,30 @@ function getSignature(request: Request): string {
   }
 
   return signature
+}
+
+function getVisitorIdFromMetadata(
+  metadata: Stripe.Metadata | null | undefined,
+): string {
+  const visitorId = metadata?.visitorId?.trim()
+
+  if (!visitorId) {
+    throw new Error("Stripe event is missing metadata.visitorId")
+  }
+
+  return visitorId
+}
+
+async function handleSubscriptionSync(subscription: Stripe.Subscription) {
+  const visitorId = getVisitorIdFromMetadata(subscription.metadata)
+  const workspace = await syncWorkspacePlanFromSubscription(subscription, visitorId)
+
+  console.info("Stripe webhook processed subscription sync", {
+    visitorId,
+    stripeSubscriptionId: subscription.id,
+    status: subscription.status,
+    plan: workspace.plan,
+  })
 }
 
 export async function POST(request: Request) {
@@ -33,6 +58,36 @@ export async function POST(request: Request) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session
+        if (session.mode === "subscription") {
+          const visitorId =
+            session.metadata?.visitorId?.trim() ?? session.client_reference_id?.trim()
+
+          if (!visitorId) {
+            throw new Error("Stripe checkout session is missing metadata.visitorId")
+          }
+
+          const subscriptionId =
+            typeof session.subscription === "string"
+              ? session.subscription
+              : session.subscription?.id ?? null
+
+          if (!subscriptionId) {
+            throw new Error("Stripe checkout session is missing subscription id")
+          }
+
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+          const workspace = await syncWorkspacePlanFromSubscription(subscription, visitorId)
+
+          console.info("Stripe webhook processed subscription checkout", {
+            visitorId,
+            stripeEventId: event.id,
+            stripeSessionId: session.id,
+            stripeSubscriptionId: subscription.id,
+            plan: workspace.plan,
+          })
+          break
+        }
+
         const { auditId } = await unlockAuditFromCheckoutSession(session)
 
         console.info("Stripe webhook processed checkout.session.completed", {
@@ -40,6 +95,13 @@ export async function POST(request: Request) {
           stripeEventId: event.id,
           stripeSessionId: session.id,
         })
+        break
+      }
+
+      case "customer.subscription.updated":
+      case "customer.subscription.deleted": {
+        const subscription = event.data.object as Stripe.Subscription
+        await handleSubscriptionSync(subscription)
         break
       }
 

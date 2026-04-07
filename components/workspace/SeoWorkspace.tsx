@@ -36,8 +36,9 @@ interface SeoWorkspaceProps {
   workspaceState?: WorkspaceState
 }
 
-interface WorkspaceMutationResponse {
-  workspace: WorkspaceState
+interface WorkspaceCheckoutResponse {
+  url?: string
+  workspace?: WorkspaceState
 }
 
 const tabs: Array<{
@@ -197,12 +198,13 @@ function PlanSwitcher({
           <button
             key={item}
             type="button"
+            disabled={item === "free" && !active}
             onClick={() => onChange(item)}
             className={`rounded-2xl border p-4 text-left transition ${
               active
                 ? "border-slate-900 bg-slate-900 text-white shadow-[0_18px_40px_-24px_rgba(15,23,42,0.75)]"
                 : "border-slate-200 bg-white/80 text-slate-700 hover:border-slate-300 hover:bg-white"
-            }`}
+            } ${item === "free" && !active ? "cursor-not-allowed opacity-70" : ""}`}
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -1589,7 +1591,7 @@ export default function SeoWorkspace({
       })
 
       const payload = (await response.json().catch(() => null)) as
-        | WorkspaceMutationResponse
+        | WorkspaceCheckoutResponse
         | { error?: string }
         | null
 
@@ -1597,11 +1599,21 @@ export default function SeoWorkspace({
         throw new Error(getApiErrorMessage(payload, "Plan update failed."))
       }
 
-      if (!payload || !("workspace" in payload)) {
+      if (!payload) {
         throw new Error("Plan update failed.")
       }
 
-      setWorkspace(payload.workspace)
+      if ("workspace" in payload && payload.workspace) {
+        setWorkspace(payload.workspace)
+        return
+      }
+
+      if ("url" in payload && payload.url) {
+        window.location.assign(payload.url)
+        return
+      }
+
+      throw new Error("Plan update failed.")
     } catch (error) {
       console.error("Workspace plan update failed:", error)
     }

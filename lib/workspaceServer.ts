@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client"
 import { NextResponse } from "next/server"
+import type Stripe from "stripe"
 
 import { prisma } from "@/lib/prisma"
 import {
@@ -9,6 +10,7 @@ import {
   type Plan,
   type UsageFeature,
 } from "@/lib/plan"
+import { getWorkspacePlanFromPriceId } from "@/lib/stripe"
 import {
   createWorkspaceVisitorId,
   resolveWorkspaceVisitorId,
@@ -134,6 +136,30 @@ export async function setWorkspacePlan(
   })
 
   return getWorkspaceState(visitorId)
+}
+
+export async function syncWorkspacePlanFromSubscription(
+  subscription: Stripe.Subscription,
+  visitorId: string,
+): Promise<WorkspaceState> {
+  const priceId = subscription.items.data[0]?.price?.id ?? null
+  const plan = getWorkspacePlanFromPriceId(priceId) ?? "free"
+  const billingStatus = subscription.status
+  const activePlan =
+    billingStatus === "active" || billingStatus === "trialing" ? plan : "free"
+  const currentPeriodEndRaw = (subscription as Stripe.Subscription & {
+    current_period_end?: number
+  }).current_period_end
+  const currentPeriodEnd =
+    typeof currentPeriodEndRaw === "number" ? new Date(currentPeriodEndRaw * 1000) : null
+
+  return setWorkspacePlan(visitorId, activePlan, {
+    stripeCustomerId:
+      typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id,
+    stripeSubscriptionId: subscription.id,
+    billingStatus,
+    currentPeriodEnd,
+  })
 }
 
 async function incrementUsageWithinTransaction(
