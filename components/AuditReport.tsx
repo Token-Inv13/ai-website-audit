@@ -337,7 +337,7 @@ export default function AuditReport({
             disabled={checkoutLoading || !canUnlock}
             className="mt-6 rounded-xl bg-white px-6 py-3 font-semibold text-blue-700 shadow-md transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {checkoutLoading ? "Redirecting to checkout..." : "Unlock Full Report — $9"}
+            {checkoutLoading ? "Redirecting to checkout..." : "Unlock Full Report — €9"}
           </button>
           {!canUnlock && unlockHelperText ? (
             <p className="mt-3 text-sm text-blue-100">{unlockHelperText}</p>

@@ -10,6 +10,7 @@ import {
   PLAN_LABELS,
   PLAN_ORDER,
   formatPlanLimit,
+  formatPlanMonthlyPrice,
   getPlanLimit,
   hasAccess,
   type Plan,
@@ -213,6 +214,9 @@ function PlanSwitcher({
                 </p>
                 <p className={`mt-1 text-xs leading-relaxed ${active ? "text-slate-200" : "text-slate-500"}`}>
                   {PLAN_DESCRIPTIONS[item]}
+                </p>
+                <p className={`mt-2 text-lg font-bold tracking-tight ${active ? "text-white" : "text-slate-900"}`}>
+                  {formatPlanMonthlyPrice(item)}
                 </p>
               </div>
               <span
@@ -1682,7 +1686,7 @@ export default function SeoWorkspace({
                 </p>
               </div>
               <div className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
-                Current: {PLAN_LABELS[workspace.plan]}
+                Current: {PLAN_LABELS[workspace.plan]} · {formatPlanMonthlyPrice(workspace.plan)}
               </div>
             </div>
             <div className="mt-4">

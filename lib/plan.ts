@@ -17,6 +17,12 @@ export const PLAN_DESCRIPTIONS: Record<Plan, string> = {
   pro: "Full access with the highest quotas and no soft caps.",
 }
 
+export const PLAN_MONTHLY_PRICES_EUR: Record<Plan, number | null> = {
+  free: null,
+  basic: 9,
+  pro: 19,
+}
+
 export const PLAN_LIMITS = {
   free: {
     auditsPerDay: 3,
@@ -131,6 +137,12 @@ export function getUsageLimit(plan: Plan, feature: UsageFeature): number {
 
 export function formatPlanLimit(value: number): string {
   return Number.isFinite(value) ? String(value) : "Unlimited"
+}
+
+export function formatPlanMonthlyPrice(plan: Plan): string {
+  const price = PLAN_MONTHLY_PRICES_EUR[plan]
+
+  return price === null ? "Free" : `€${price}/mo`
 }
 
 export function getNextPlan(plan: Plan): Plan {

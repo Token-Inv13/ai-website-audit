@@ -82,7 +82,7 @@ const softwareApplicationStructuredData = {
   offers: {
     "@type": "Offer",
     price: "9",
-    priceCurrency: "USD",
+    priceCurrency: "EUR",
   },
 }
 

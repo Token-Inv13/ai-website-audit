@@ -3,7 +3,14 @@ import type { Metadata } from "next"
 import BrandLogo from "@/components/BrandLogo"
 import HomeUrlForm from "@/components/HomeUrlForm"
 import { BRAND_NAME } from "@/lib/branding"
-import { PLAN_DESCRIPTIONS, PLAN_LABELS, PLAN_ORDER, formatPlanLimit, getPlanLimit } from "@/lib/plan"
+import {
+  PLAN_DESCRIPTIONS,
+  PLAN_LABELS,
+  PLAN_ORDER,
+  formatPlanLimit,
+  formatPlanMonthlyPrice,
+  getPlanLimit,
+} from "@/lib/plan"
 
 const reviewItems = [
   { title: "SEO review", subtitle: "Find ranking blockers and metadata gaps." },
@@ -127,6 +134,13 @@ export default function HomePage() {
                         {PLAN_LABELS[plan]}
                       </p>
                       <h3 className="mt-2 text-xl font-semibold">{plan === "basic" ? "Most popular" : plan === "pro" ? "For teams" : "Start free"}</h3>
+                      <p
+                        className={`mt-2 text-3xl font-bold tracking-tight ${
+                          isFeatured ? "text-white" : "text-slate-900"
+                        }`}
+                      >
+                        {formatPlanMonthlyPrice(plan)}
+                      </p>
                     </div>
                     {isFeatured ? (
                       <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-900">
