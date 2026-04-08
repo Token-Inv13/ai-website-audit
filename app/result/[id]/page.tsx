@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { useParams, useSearchParams } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 
 import AuditReport from "@/components/AuditReport"
 import { BRAND_NAME, REPORT_LABEL } from "@/lib/branding"
@@ -25,6 +25,7 @@ interface AuditApiResponse {
 const publicAppUrl = getPublicAppUrl()
 
 export default function ResultPage() {
+  const router = useRouter()
   const params = useParams<{ id: string }>()
   const searchParams = useSearchParams()
   const id = params?.id
@@ -33,7 +34,6 @@ export default function ResultPage() {
   const [isUnlocked, setIsUnlocked] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [checkoutError, setCheckoutError] = useState("")
   const [hasEmail, setHasEmail] = useState(false)
   const [emailInput, setEmailInput] = useState("")
@@ -220,46 +220,7 @@ export default function ResultPage() {
   }
 
   async function handleUnlock() {
-    if (!id) {
-      return
-    }
-
-    if (!hasEmail) {
-      setCheckoutError("Please enter your email before unlocking the full report.")
-      return
-    }
-
-    setCheckoutLoading(true)
-    setCheckoutError("")
-
-    try {
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ auditId: id }),
-      })
-
-      const payload = (await response
-        .json()
-        .catch(() => null)) as { url?: string } | null
-
-      if (!response.ok) {
-        throw new Error(
-          getApiErrorMessage(payload, "Checkout session creation failed."),
-        )
-      }
-
-      if (!payload?.url) {
-        throw new Error("Checkout session creation failed.")
-      }
-
-      window.location.href = payload.url
-    } catch (unlockError) {
-      setCheckoutError(getErrorMessage(unlockError, "Unable to start checkout."))
-      setCheckoutLoading(false)
-    }
+    router.push("/dashboard")
   }
 
   function buildShareUrl(): string | null {
@@ -523,7 +484,7 @@ export default function ResultPage() {
                 ? "Continue to unlock the full report."
                 : "Enter your email to unlock the full report."
             }
-            checkoutLoading={checkoutLoading}
+            checkoutLoading={false}
             checkoutError={checkoutError}
           />
         ) : null}

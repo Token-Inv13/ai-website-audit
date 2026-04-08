@@ -327,18 +327,30 @@ export default function AuditReport({
       {!unlocked ? (
         <section className="rounded-2xl border border-blue-300/80 bg-gradient-to-br from-blue-600 to-cyan-600 p-6 text-white shadow-[0_22px_60px_-24px_rgba(37,99,235,0.8)] sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-100">Upgrade</p>
-          <h3 className="mt-2 text-2xl font-semibold tracking-tight">Unlock the full audit report</h3>
+          <h3 className="mt-2 text-2xl font-semibold tracking-tight">
+            Continue in the SEO Workspace
+          </h3>
           <p className="mt-3 max-w-2xl text-blue-50">
-            Get complete detailed recommendations, full issue list, and a clearer implementation plan tailored to this website.
+            View Basic and Pro plans, then continue inside the workspace to unlock the right
+            level of access for this site.
           </p>
-          <button
-            type="button"
-            onClick={onUnlock}
-            disabled={checkoutLoading || !canUnlock}
-            className="mt-6 rounded-xl bg-white px-6 py-3 font-semibold text-blue-700 shadow-md transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {checkoutLoading ? "Redirecting to checkout..." : "Unlock Full Report — €9"}
-          </button>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={onUnlock}
+              className="rounded-xl bg-white px-6 py-3 font-semibold text-blue-700 shadow-md transition hover:bg-blue-50"
+            >
+              View plans
+            </button>
+            <button
+              type="button"
+              onClick={onUnlock}
+              disabled={checkoutLoading}
+              className="rounded-xl border border-white/30 bg-white/10 px-6 py-3 font-semibold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              Open SEO Workspace
+            </button>
+          </div>
           {!canUnlock && unlockHelperText ? (
             <p className="mt-3 text-sm text-blue-100">{unlockHelperText}</p>
           ) : null}
